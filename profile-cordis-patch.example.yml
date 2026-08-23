@@ -1,0 +1,7 @@
+# Add to your profile's cordis.patch.yml (e.g. ~/.dsh/profiles/web/cordis.patch.yml),
+# inside or alongside the existing `- insert:` list:
+
+- insert:
+    # Always-expanded split diff for edit/write tool calls.
+    - id: inline-diff
+      name: 'dsh-inline-diff'

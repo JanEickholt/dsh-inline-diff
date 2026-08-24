@@ -41,6 +41,10 @@ Pure client plugin — the host half is an empty stub. Registers into the keyed 
 
 To cover other mutation tool names, add one more `yield` line in `lib/client.js` → `apply()`.
 
+## Tuning
+
+Colors live in `lib/client.js` → the `CSS` template: `.did-delbg` / `.did-insbg` (row fill alpha), `.did-no.did-*bg` (number-gutter fill), `#3fb950` / `#f85149` (stat colors). Card width = widest line per side × 2, centered in the conversation column, capped at container width (`INSET`, `MIN` constants in `InlineDiffRow`).
+
 ## Limits
 
 - LCS line diff capped at 1200 lines per side (beyond: whole-file replace display)

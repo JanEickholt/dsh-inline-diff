@@ -25,7 +25,13 @@ By default a changed line gets double highlighting: the row is tinted green/red,
 
 ## Install
 
-**From GitHub** (recommended):
+**With the `dsh` CLI** (easiest):
+
+```sh
+dsh plugin --profile web add github:JanEickholt/dsh-inline-diff
+```
+
+**From GitHub** (manual, same result):
 
 1. Add the plugin to your profile's `package.json`:
 
@@ -53,8 +59,7 @@ Contributions of any kind are welcome — code, bug reports, docs, design ideas,
 
 ## About this project
 
-This plugin was written by an AI coding agent (with a human steering it) as a demonstration of what DSH client plugins can do. Yes, an AI wrote the thing you are reading too.
-
+This plugin was written by an AI coding agent (with a human steering it).
 ## License
 
 MIT

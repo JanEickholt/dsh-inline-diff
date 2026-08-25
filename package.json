@@ -18,6 +18,27 @@
       "platform": "web"
     }
   },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek",
+    "deepseek-harness",
+    "diff",
+    "web-plugin"
+  ],
+  "files": [
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JanEickholt/dsh-inline-diff.git"
+  },
+  "homepage": "https://github.com/JanEickholt/dsh-inline-diff#readme",
+  "bugs": {
+    "url": "https://github.com/JanEickholt/dsh-inline-diff/issues"
+  },
   "dependencies": {
     "@deepseek-ai/dsh-settings": "^0.1.1-rc.2",
     "@deepseek-ai/schemastery": "^3.18.1"

@@ -1,55 +1,55 @@
 # dsh-inline-diff
 
-Always-expanded split diff view for `edit` / `write` tool calls in the [DeepSeek Harness](https://github.com/deepseek-ai) web GUI.
+See every file your agent edits — right in the chat, no clicking required.
 
-Shadows the stock collapsed tool rows: every file mutation renders inline in the chat flow as a side-by-side diff — line numbers, red/green highlighting, per-file `+N −N` stats, clickable path (host open-file), multi-file support. New-file writes render as pure green additions.
+By default the DeepSeek Harness web GUI collapses each file edit into a tiny one-line row. This plugin replaces those rows with an always-open, side-by-side diff: old code on the left, new code on the right, additions in green, deletions in red, with line numbers and a `+N −N` summary for every file.
 
 | | |
 |---|---|
-| Stock | collapsed row, click to expand a stacked diff |
-| **This plugin** | always open, split view, zero clicks |
+| Without | collapsed rows, one click per file to see what changed |
+| **With** | the full diff is just there, in the conversation |
+
+## What it looks like
+
+A typical edit — changed lines paired side by side, with the exact words that changed highlighted:
+
+![A side-by-side diff of an edit, with changed words highlighted](docs/screenshot-split-diff.png)
+
+Smaller edits stay compact:
+
+![A compact diff card](docs/screenshot-compact-card.png)
 
 ## Install
 
-**GitHub dependency** (recommended):
+**From GitHub** (recommended):
 
-```sh
-# 1. add to <profile>/package.json dependencies
-#    "dsh-inline-diff": "github:<you>/dsh-inline-diff"
-pnpm install
+1. Add the plugin to your profile's `package.json`:
 
-# 2. add the composition row (see profile-cordis-patch.example.yml)
-```
+   ```json
+   "dsh-inline-diff": "github:JanEickholt/dsh-inline-diff"
+   ```
 
-**Manual**: copy this package into `<profile>/node_modules/dsh-inline-diff/` and add the patch row.
+   then run `pnpm install` in the profile directory.
 
-**dshmarket**: publish to npm and list in [awesome-dsh-plugin](https://awesome-dsh-plugin.com) for one-click install.
+2. Add it to your profile's `cordis.patch.yml`:
 
-Patch row (`cordis.patch.yml`):
+   ```yaml
+   - insert:
+       - id: inline-diff
+         name: 'dsh-inline-diff'
+   ```
 
-```yaml
-- insert:
-    - id: inline-diff
-      name: 'dsh-inline-diff'
-```
+3. Refresh the GUI page. Done — every edit and file write now renders as an inline diff.
 
-Goes live on page refresh; the patch watcher hot-recomposes, no host restart needed.
+**Manual**: copy this repository into `<profile>/node_modules/dsh-inline-diff/` and add the same patch row.
 
-## How it works
+## Contributing
 
-Pure client plugin — the host half is an empty stub. Registers into the keyed `tool.call.toolview` slot for `edit` and `write` at `priority: -1` (lowest priority renders, so the stock rows are shadowed; unloading the plugin restores them). Diff data comes from each call's own wire `card: 'diff'` view (`{path, oldText, newText}` hunks): settled calls read the result side, new-file whole writes fall back to the call-time diff, running calls show call-time state. No git, no file reads, no host communication.
+Contributions of any kind are welcome — code, bug reports, docs, design ideas, screenshots, or just telling us what confused you. Open an issue or a pull request; nothing is too small.
 
-To cover other mutation tool names, add one more `yield` line in `lib/client.js` → `apply()`.
+## About this project
 
-## Tuning
-
-Colors live in `lib/client.js` → the `CSS` template: `.did-delbg` / `.did-insbg` (row fill alpha), `.did-no.did-*bg` (number-gutter fill), `#3fb950` / `#f85149` (stat colors). Card width = widest line per side × 2, centered in the conversation column, capped at container width (`INSET`, `MIN` constants in `InlineDiffRow`).
-
-## Limits
-
-- LCS line diff capped at 1200 lines per side (beyond: whole-file replace display)
-- 600 rendered rows per card, then a "… N more lines" footer
-- Hunks are the wire's own fragments — very large writes may be summarized by the host before they reach the client
+This plugin was written by an AI coding agent (with a human steering it) as a demonstration of what DSH client plugins can do. Yes, an AI wrote the thing you are reading too.
 
 ## License
 

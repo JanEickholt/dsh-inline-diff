@@ -1,7 +1,7 @@
 {
   "name": "dsh-inline-diff",
-  "version": "0.6.0",
-  "description": "Always-expanded split diff view for edit/write tool calls in the DeepSeek Harness web GUI: shadows the stock collapsed rows via the tool.call.toolview slot and renders each mutation as an inline side-by-side diff with line numbers",
+  "version": "0.7.0",
+  "description": "Always-expanded split diff view for edit/write tool calls in the DeepSeek Harness web GUI: shadows the stock collapsed rows via the tool.call.toolview slot and renders each mutation as an inline side-by-side diff with line numbers; word-level highlighting is optional (Settings → General)",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -17,6 +17,10 @@
     "client": {
       "platform": "web"
     }
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-settings": "^0.1.1-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.1"
   },
   "license": "MIT"
 }

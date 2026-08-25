@@ -19,6 +19,10 @@ Smaller edits stay compact:
 
 ![A compact diff card](docs/screenshot-compact-card.png)
 
+## Words or whole lines
+
+By default a changed line gets double highlighting: the row is tinted green/red, and on top of that the exact words that changed get a stronger highlight. Prefer it calmer? Open **Settings → General → Diff highlighting** and pick *Lines only* — you keep the row tint but lose the word chips. The choice is saved in your DSH settings and survives restarts.
+
 ## Install
 
 **From GitHub** (recommended):

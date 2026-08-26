@@ -29,9 +29,15 @@ By default a changed line gets double highlighting: the row is tinted green/red,
 
 Edits often arrive indented with their surrounding code, which pushes the actual change toward the middle of the card. By default the diff strips the leading whitespace every non-empty line shares, so changes sit closer to the gutter; a small `⇤ N` badge on the file header shows how many characters were removed. Prefer seeing the code as written? Pick *Keep* under **Settings → Plugins → Inline diff** and the original indentation stays. Like the highlighting choice, this is saved and survives restarts.
 
+## Syntax highlighting
+
+Code rows are colored by a bundled highlight.js (the same language set the Solution Explorer sidebar uses), so edits read like an editor: keywords in your accent color, strings green, comments muted, and so on. The tokens read the same `--shiki-token-*` variables your GUI's code blocks render with, and the language is detected from the file's extension; unknown extensions stay plain. Prefer plain text? Pick *Off* under **Settings → Plugins → Inline diff → Syntax highlighting**. Like the other choices, this is saved and survives restarts.
+
+[dsh-stylevault](https://github.com/GptsApp/dsh-stylevault) compatible: its Colors panel overrides exactly those `--shiki-token-*` variables, so restyling your theme there restyles the diff cards too.
+
 ## Themes
 
-Every color on the card, from surfaces and text to borders and the green/red diff tints, is derived from your GUI's theme tokens (Settings → Appearance). The card follows light mode, dark mode, and any custom accent colors instead of a fixed palette.
+Every color on the card, from surfaces and text to borders and the green/red diff tints, is derived from your GUI's theme tokens (Settings → Appearance). The card follows light mode, dark mode, and any custom accent colors instead of a fixed palette. The syntax token colors ride the same system (the GUI's shiki code palette); before any theme variables exist they simply render as the card's plain text color.
 
 ## Language
 

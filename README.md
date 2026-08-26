@@ -1,6 +1,8 @@
 # dsh-inline-diff
 
-See every file your agent edits — right in the chat, no clicking required.
+English | [简体中文](README.zh.md)
+
+See every file your agent edits, right in the chat. No clicking required.
 
 By default the DeepSeek Harness web GUI collapses each file edit into a tiny one-line row. This plugin replaces those rows with an always-open, side-by-side diff: old code on the left, new code on the right, additions in green, deletions in red, with line numbers and a `+N −N` summary for every file.
 
@@ -30,6 +32,10 @@ Edits often arrive indented with their surrounding code, which pushes the actual
 ## Themes
 
 Every color on the card, from surfaces and text to borders and the green/red diff tints, is derived from your GUI's theme tokens (Settings → Appearance). The card follows light mode, dark mode, and any custom accent colors instead of a fixed palette.
+
+## Language
+
+The settings card comes with English and Simplified Chinese text. It follows the GUI language picked under **Settings → General → Language**; when nothing is stored it follows your browser. A missing translation falls back to English.
 
 ## Install
 

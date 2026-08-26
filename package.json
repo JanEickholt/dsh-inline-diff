@@ -35,7 +35,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node tests/render-test.mjs"
+    "test": "node tests/render-test.mjs && node tests/host-anchor-test.mjs"
   },
   "repository": {
     "type": "git",

@@ -6,6 +6,8 @@ See every file your agent edits, right in the chat. No clicking required.
 
 By default the DeepSeek Harness web GUI collapses each file edit into a tiny one-line row. This plugin replaces those rows with an always-open, side-by-side diff: old code on the left, new code on the right, additions in green, deletions in red, with line numbers and a `+N −N` summary for every file.
 
+Gutters show the hunks' real positions in the file: the host half listens on the `tools/execute` waterfall, caches each settled edit's full before/after texts, and stamps 1-based starts onto served diff hunks by locating them verbatim (ambiguous matches stay unstamped). Cards it cannot anchor fall back to counting from 1.
+
 | | |
 |---|---|
 | Without | collapsed rows, one click per file to see what changed |

@@ -23,6 +23,10 @@ Smaller edits stay compact:
 
 By default a changed line gets double highlighting: the row is tinted green/red, and on top of that the exact words that changed get a stronger highlight. Prefer it calmer? Open **Settings → Plugins → Inline diff** and pick *Lines only*. You keep the row tint but lose the word chips. The choice is saved in your DSH settings and survives restarts.
 
+## Indentation
+
+Edits often arrive indented with their surrounding code, which pushes the actual change toward the middle of the card. By default the diff strips the leading whitespace every non-empty line shares, so changes sit closer to the gutter; a small `⇤ N` badge on the file header shows how many characters were removed. Prefer seeing the code as written? Pick *Keep* under **Settings → Plugins → Inline diff** and the original indentation stays. Like the highlighting choice, this is saved and survives restarts.
+
 ## Themes
 
 Every color on the card, from surfaces and text to borders and the green/red diff tints, is derived from your GUI's theme tokens (Settings → Appearance). The card follows light mode, dark mode, and any custom accent colors instead of a fixed palette.

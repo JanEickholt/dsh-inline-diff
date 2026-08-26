@@ -11,7 +11,7 @@ By default the DeepSeek Harness web GUI collapses each file edit into a tiny one
 
 ## What it looks like
 
-A typical edit — changed lines paired side by side, with the exact words that changed highlighted:
+A typical edit: changed lines paired side by side, with the exact words that changed highlighted:
 
 ![A side-by-side diff of an edit, with changed words highlighted](docs/screenshot-split-diff.png)
 
@@ -21,7 +21,11 @@ Smaller edits stay compact:
 
 ## Words or whole lines
 
-By default a changed line gets double highlighting: the row is tinted green/red, and on top of that the exact words that changed get a stronger highlight. Prefer it calmer? Open **Settings → General → Diff highlighting** and pick *Lines only* — you keep the row tint but lose the word chips. The choice is saved in your DSH settings and survives restarts.
+By default a changed line gets double highlighting: the row is tinted green/red, and on top of that the exact words that changed get a stronger highlight. Prefer it calmer? Open **Settings → Plugins → Inline diff** and pick *Lines only*. You keep the row tint but lose the word chips. The choice is saved in your DSH settings and survives restarts.
+
+## Themes
+
+Every color on the card, from surfaces and text to borders and the green/red diff tints, is derived from your GUI's theme tokens (Settings → Appearance). The card follows light mode, dark mode, and any custom accent colors instead of a fixed palette.
 
 ## Install
 
@@ -49,17 +53,18 @@ dsh plugin --profile web add github:JanEickholt/dsh-inline-diff
          name: 'dsh-inline-diff'
    ```
 
-3. Refresh the GUI page. Done — every edit and file write now renders as an inline diff.
+3. Refresh the GUI page. Done. Every edit and file write now renders as an inline diff.
 
 **Manual**: copy this repository into `<profile>/node_modules/dsh-inline-diff/` and add the same patch row.
 
 ## Contributing
 
-Contributions of any kind are welcome — code, bug reports, docs, design ideas, screenshots, or just telling us what confused you. Open an issue or a pull request; nothing is too small.
+Contributions of any kind are welcome: code, bug reports, docs, design ideas, screenshots, or just telling us what confused you. Open an issue or a pull request; nothing is too small.
 
 ## About this project
 
 This plugin was written by an AI coding agent (with a human steering it).
+
 ## License
 
 MIT

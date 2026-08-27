@@ -5,21 +5,8 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
 // Load the ESM host half without Node's module resolution touching optional
-// deps: read the file, rewrite its bare imports to stubs.
+// deps: read the file, rewrite its bare imports to data-URL stubs.
 const source = readFileSync(new URL("../lib/index.js", import.meta.url), "utf8");
-const settingsNamespace = (name) => name;
-const z = {
-	object(spec) { return spec; },
-	union(values) { return values; },
-};
-const rewritten = source
-	.replace('from "@deepseek-ai/dsh-settings"', JSON.stringify("./stub-settings.mjs"))
-	.replace('from "@deepseek-ai/schemastery"', JSON.stringify("./stub-schemastery.mjs"));
-await import("data:text/javascript," + encodeURIComponent(
-	"export const settingsNamespace=" + settingsNamespace.toString() + ";"
-));
-
-// Simpler: build data URLs for the two stubs + the transformed plugin module.
 const stubSettings = "data:text/javascript," + encodeURIComponent("export const settingsNamespace=(n)=>'inline-diff:'+n;");
 const stubZ = "data:text/javascript," + encodeURIComponent(`
 	const chainable = () => { const self = () => self; return new Proxy(self, { get: (_t, prop) => prop === Symbol.toPrimitive ? undefined : chainable() }); };
@@ -104,9 +91,8 @@ const fakeCtx = {
 	effect() {},
 	inject(services, fn) {
 		if (services.length === 1 && services[0] === "tools") {
-			const effects = [];
 			fn({
-				effect(fn2) { const d = fn2(); effects.push(d); return d; },
+				effect(factory) { return factory(); },
 				on: (event, listener) => tools.on(event, listener),
 				tools,
 			});

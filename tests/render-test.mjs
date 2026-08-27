@@ -1,5 +1,5 @@
-// Throwaway render test: materialize the plugin factory with stubs, apply()
-// onto a fake ctx, renderToString InlineDiffRow, assert syntax tokens + chips.
+// Renders the client half with stubs: apply() onto a fake ctx, render
+// InlineDiffRow server-side, assert syntax tokens, word chips and gutters.
 import { readFileSync } from "node:fs";
 import React from "react";
 import { renderToString } from "react-dom/server";

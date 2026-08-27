@@ -15,11 +15,7 @@ By default the DeepSeek Harness web GUI collapses each file edit into a tiny one
 
 A typical edit: changed lines paired side by side, with the exact words that changed highlighted:
 
-![A side-by-side diff of an edit, with changed words highlighted](docs/screenshot-split-diff.png)
-
-Smaller edits stay compact:
-
-![A compact diff card](docs/screenshot-compact-card.png)
+![A diff card of an edit, with changed words highlighted](docs/screenshot-compact-card.png)
 
 ## Words or whole lines
 
@@ -38,6 +34,10 @@ Code rows are colored by a bundled highlight.js (the same language set the Solut
 ## Themes
 
 Every color on the card, from surfaces and text to borders and the green/red diff tints, is derived from your GUI's theme tokens (Settings → Appearance). The card follows light mode, dark mode, and any custom accent colors instead of a fixed palette. The syntax token colors ride the same system (the GUI's shiki code palette); before any theme variables exist they simply render as the card's plain text color.
+
+The same compact edit under a custom theme — [dsh-stylevault](https://github.com/GptsApp/dsh-stylevault) overrides exactly those token variables, so a restyle there restyles every diff card:
+
+![A compact diff card with a custom theme](docs/screenshot-compact-themed.png)
 
 ## Language
 

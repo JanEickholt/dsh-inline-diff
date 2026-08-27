@@ -15,11 +15,7 @@
 
 一次典型的编辑：改动行左右配对，精确到词的高亮：
 
-![一次编辑的左右对照 diff，变更的词被高亮](docs/screenshot-split-diff.png)
-
-较小的编辑则保持紧凑：
-
-![紧凑的 diff 卡片](docs/screenshot-compact-card.png)
+![一次编辑的左右对照 diff，变更的词被高亮](docs/screenshot-compact-card.png)
 
 ## 词级或整行高亮
 
@@ -42,6 +38,10 @@
 ## 主题
 
 卡片上的每一种颜色——从表面、文字、边框到绿/红 diff 底色——都取自 GUI 的主题 token（设置 → 外观）。卡片会跟随浅色模式、深色模式以及自定义强调色，而不是固定配色。语法 token 颜色走同一套体系（GUI 的 shiki 代码配色）；主题变量尚不存在时，它们就是卡片的普通文字颜色。
+
+同样一处紧凑编辑在自定义主题下的效果——[dsh-stylevault](https://github.com/GptsApp/dsh-stylevault) 覆盖的正是这组 token 变量，在那里重新配色，所有 diff 卡片都会跟着变：
+
+![自定义主题下的紧凑 diff 卡片](docs/screenshot-compact-themed.png)
 
 ## 安装
 

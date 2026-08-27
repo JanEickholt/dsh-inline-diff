@@ -72,25 +72,8 @@ const html = renderToString(React.createElement(InlineDiffRow, {
 	block, toolName: "edit", cwd: "/w", home: "/h",
 }));
 
-// Anchored hunks: host-stamped 1-based starts must surface as real gutters.
-const blockAnchored = {
-	kind: "edit",
-	resultView: {
-		card: "diff",
-		diffs: [{
-			path: "lib/client.js",
-			oldText: "function getLocale() {\n\treturn oldLocale;\n}\n",
-			newText: "const getLocale = () => {\n\treturn activeLocale; // keep\n};\n",
-			oldStart: 140,
-			newStart: 141,
-		}],
-	},
-};
-const htmlAnchored = renderToString(React.createElement(InlineDiffRow, {
-	block: blockAnchored, toolName: "edit", cwd: "/w", home: "/h",
-}));
-// The hunk's first row pair shows the stamped numbers.
-if (!htmlAnchored.includes(">140<") || !htmlAnchored.includes(">141<")) throw new Error("anchored gutters missing");
+// No gutters: rows render as a plain two-column split without numbers.
+if (html.includes("did-no") || />140<|>141</.test(html)) throw new Error("gutter numbers still rendered");
 
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
@@ -98,7 +81,8 @@ const checks = [
 	["word chip present", /did-insword/.test(html)],
 	["chip merged with token class", /class="hljs-keyword did-insword"|class="did-insword hljs-keyword"/.test(html)],
 	["row tint present", /did-insbg/.test(html)],
-	["gutter numbers", /did-no/.test(html)],
+	["no gutter numbers", !/did-no/.test(html)],
+	["no sign markers", !/did-sign/.test(html)],
 	["file head stats", /did-filehead/.test(html)],
 ];
 let failed = 0;

@@ -93,6 +93,27 @@ for (const [name, ok] of checks) {
 console.log("--- html sample ---");
 console.log(html.slice(0, 1000));
 
+// Failed call: the attempted diff stays collapsed behind a clickable
+// header carrying the failed badge, with no diff rows rendered.
+const failedHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: { kind: "edit", isError: true, call: { name: "edit", argsRaw: JSON.stringify({
+		file_path: "lib/client.js",
+		old_string: "function getLocale() {\n\treturn oldLocale;\n}\n",
+		new_string: "const getLocale = () => {\n\treturn activeLocale; // keep\n};\n",
+	}) } },
+	toolName: "edit", cwd: "/w", home: "/h",
+}));
+const failedChecks = [
+	["failed card collapsed", !/did-grid/.test(failedHtml)],
+	["failed badge present", /did-failedbadge/.test(failedHtml) && /failed/.test(failedHtml)],
+	["failed head is a toggle", /did-headtoggle/.test(failedHtml) && /aria-expanded="false"/.test(failedHtml)],
+	["failed head keeps stats", /did-addnum/.test(failedHtml)],
+];
+for (const [name, ok] of failedChecks) {
+	console.log((ok ? "PASS" : "FAIL") + " " + name);
+	if (!ok) failed++;
+}
+
 // Settings card smoke: renders its header with the updated description.
 const DiffHighlightCard = collect("settings.plugin.item")[0];
 if (typeof DiffHighlightCard !== "function") throw new Error("card component not resolved");

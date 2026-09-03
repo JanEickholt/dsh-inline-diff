@@ -57,7 +57,9 @@ const collect = (name) => {
 const InlineDiffRow = collect("tool.call.toolview")[0];
 if (typeof InlineDiffRow !== "function") throw new Error("toolview component not resolved");
 
-const block = {
+// Unstamped hunks render no numbers in SSR (the locate fallback runs in a
+// browser effect; without a trustworthy base the gutter stays blank).
+const unstampedBlock = {
 	kind: "edit",
 	resultView: {
 		card: "diff",
@@ -69,11 +71,33 @@ const block = {
 	},
 };
 const html = renderToString(React.createElement(InlineDiffRow, {
-	block, toolName: "edit", cwd: "/w", home: "/h",
+	block: unstampedBlock, toolName: "edit", cwd: "/w", home: "/h",
 }));
+if (/<span class="did-num">\d+</.test(html)) throw new Error("numbers rendered without a base");
 
-// No gutters: rows render as a plain two-column split without numbers.
-if (html.includes("did-no") || />140<|>141</.test(html)) throw new Error("gutter numbers still rendered");
+// Stamped hunks (host serve-time oldStart/newStart anchors) number every row:
+// three modified rows → old 10..12, new 12..14.
+const stampedBlock = {
+	kind: "edit",
+	resultView: {
+		card: "diff",
+		diffs: [{
+			path: "lib/client.js",
+			oldText: "function getLocale() {\n\treturn oldLocale;\n}\n",
+			newText: "const getLocale = () => {\n\treturn activeLocale; // keep\n};\n",
+			oldStart: 10,
+			newStart: 12,
+		}],
+	},
+};
+const stampedHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: stampedBlock, toolName: "edit", cwd: "/w", home: "/h",
+}));
+for (const expected of [10, 11, 12, 13, 14]) {
+	if (!stampedHtml.includes('<span class="did-num">' + expected + "</span>")) {
+		throw new Error("missing gutter number " + expected);
+	}
+}
 
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
@@ -81,7 +105,7 @@ const checks = [
 	["word chip present", /did-insword/.test(html)],
 	["chip merged with token class", /class="hljs-keyword did-insword"|class="did-insword hljs-keyword"/.test(html)],
 	["row tint present", /did-insbg/.test(html)],
-	["no gutter numbers", !/did-no/.test(html)],
+	["no numbers without a base", !/<span class="did-num">\d+</.test(html)],
 	["no sign markers", !/did-sign/.test(html)],
 	["file head stats", /did-filehead/.test(html)],
 ];

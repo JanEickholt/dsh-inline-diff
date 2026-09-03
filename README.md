@@ -21,6 +21,10 @@ A typical edit: changed lines paired side by side, with the exact words that cha
 
 By default a changed line gets double highlighting: the row is tinted green/red, and on top of that the exact words that changed get a stronger highlight. Prefer it calmer? Open **Settings → Plugins → Inline diff** and pick *Lines only*. You keep the row tint but lose the word chips. The choice is saved in your DSH settings and survives restarts.
 
+## Line numbers
+
+Every row carries its real 1-based file line number in a muted gutter, on both the old and the new side. The numbers come from the harness itself: when an edit settles, the plugin anchors each served hunk to its true position, and for hunks without an anchor the card reads the file through a fenced workspace route and locates the changed block verbatim — a block that appears more than once, or a file that changed since, refuses to guess and simply shows no number rather than a wrong one.
+
 ## Indentation
 
 Edits often arrive indented with their surrounding code, which pushes the actual change toward the middle of the card. By default the diff strips the leading whitespace every non-empty line shares, so changes sit closer to the gutter; a small `⇤ N` badge on the file header shows how many characters were removed. Prefer seeing the code as written? Pick *Keep* under **Settings → Plugins → Inline diff** and the original indentation stays. Like the highlighting choice, this is saved and survives restarts.

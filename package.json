@@ -1,6 +1,6 @@
 {
   "name": "dsh-inline-diff",
-  "version": "1.2.2",
+  "version": "1.2.1",
   "description": "Renders edit and write tool calls as always-expanded side-by-side diffs, with optional syntax coloring and word-level highlighting.",
   "type": "module",
   "main": "lib/index.js",

@@ -23,7 +23,7 @@ By default a changed line gets double highlighting: the row is tinted green/red,
 
 ## Line numbers
 
-Every row carries a 1-based line number in a muted gutter, on both the old and the new side. The numbers come from the harness itself: when an edit settles, the plugin anchors each served hunk to its true position, and for hunks without an anchor the card reads the file through a fenced workspace route and locates the changed block verbatim. A hunk that cannot be located (a block appearing more than once, a drifted file, no host half) falls back to window-relative numbering from the hunk's first row, so a number always renders — but it may not be the file's true line.
+Every row carries a 1-based line number in a muted gutter, on both the old and the new side. The numbers come from the harness itself: when an edit settles, the plugin anchors each served hunk to its true position, and for hunks without an anchor the card reads the file through a fenced workspace route and locates the changed block verbatim. A hunk that cannot be located (a block appearing more than once, a drifted file, no host half) falls back to window-relative numbering from the hunk's first row, so a number always renders — but it may not be the file's true line. Prefer it cleaner? Pick *Off* under **Settings → Plugins → Inline diff → Line numbers** and the gutter disappears entirely. Like the other choices, this is saved and survives restarts.
 
 ## Indentation
 

@@ -1,6 +1,6 @@
-// Host-half anchor test: drive the presenter wrapper with a cached
-// before/after pair shaped like the real pipeline's {path, before, after}
-// outcome, then assert outgoing diff hunks carry correct 1-based starts.
+// Host-half anchor test: drive the presentationMeta wrapper with a settled
+// {before, after} value shaped like the real pipeline's execute outcome, then
+// assert the projected meta hunks carry correct 1-based starts.
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 
@@ -23,35 +23,14 @@ const { apply } = plugin;
 
 // --- fake tools service -------------------------------------------------
 class FakeTools {
-	constructor() { this.defs = new Map(); this.listeners = new Map(); }
-	register(definition) { this.defs.set(definition.name, definition); this.emit("tools/change"); }
+	constructor() { this.defs = new Map(); this.listeners = new Set(); }
+	register(definition) { this.defs.set(definition.name, definition); this.emit(); }
 	get(name) { return this.defs.get(name); }
-	on(event, listener) {
-		(this.listeners.get(event) ?? this.listeners.set(event, new Set()).get(event)).add(listener);
-		return () => this.listeners.get(event)?.delete(listener);
-	}
-	async waterfall(_carrier, event, ...args) {
-		const list = [...this.listeners.get(event) ?? []];
-		const positional = args.slice(0, -1);
-		const terminal = args[args.length - 1];
-		const run = (i) => i < 0 ? terminal(...positional) : list[i](...positional, () => run(i - 1));
-		return run(list.length - 1);
-	}
-	emit(event, ...args) { for (const l of this.listeners.get(event) ?? []) l(...args); }
-}
-
-// Presenters mirroring the stock edit tool's result view.
-function editDefinition() {
-	return {
-		name: "edit",
-		presentResult(args, result) {
-			if (result.isError) return undefined;
-			return {
-				card: "diff",
-				diffs: result.meta.diffs.map((d) => ({ path: d.path, oldText: d.oldText, newText: d.newText })),
-			};
-		},
-	};
+	on(_event, listener) { this.listeners.add(listener); return () => this.listeners.delete(listener); }
+	emit() { for (const l of [...this.listeners]) l(); }
+	// Mirrors the kernel's dispatch gate: presentationMeta is invoked through
+	// createSuccessResult with the scope-resolved definition.
+	createSuccessResult(_exec, tool, value) { return tool.output.presentationMeta({}, value); }
 }
 
 const before = [
@@ -69,8 +48,9 @@ const before = [
 const after = before.replace("delta\n", "").replace("juliett", "JULIETT-EDITED");
 
 // The producer's shape for that change: two hunks with ±3 context lines
-// (gap > 6 shared lines keeps them separate).
-const metaDiffs = [
+// (gap > 6 shared lines keeps them separate). presentationMeta replays this
+// list fresh per call, like the real projector computing from the value pair.
+const metaDiffs = () => [
 	{ // deletion hunk: lines 3..7 context → oldStart 4 area
 		path: "/w/demo.txt",
 		oldText: ["charlie", "delta", "echo"].join("\n"),
@@ -84,15 +64,21 @@ const metaDiffs = [
 ];
 
 const tools = new FakeTools();
-tools.register(editDefinition());
+tools.register({
+	name: "edit",
+	output: {
+		presentationMeta() { return { diffs: metaDiffs() }; },
+	},
+});
 
 const captured = [];
+const disposers = [];
 const fakeCtx = {
-	effect() {},
+	effect(factory) { const d = factory(); disposers.push(d); return d; },
 	inject(services, fn) {
 		if (services.length === 1 && services[0] === "tools") {
 			fn({
-				effect(factory) { return factory(); },
+				effect(factory) { const d = factory(); disposers.push(d); return d; },
 				on: (event, listener) => tools.on(event, listener),
 				tools,
 			});
@@ -102,19 +88,13 @@ const fakeCtx = {
 
 apply(fakeCtx);
 
-// Settle one edit-style call through the execute waterfall.
-await tools.waterfall(undefined, "tools/execute", { name: "edit", arguments: { file_path: "/w/demo.txt" } }, async () => ({
-	isError: false,
-	value: { path: "/w/demo.txt", before, after },
-}));
-
-// Serve the result view twice; stamps must attach both times (serve-time recompute).
-for (let serve = 0; serve < 2; serve++) {
-	const view = tools.get("edit").presentResult({}, { isError: false, meta: { diffs: structuredClone(metaDiffs) } });
-	assert.equal(view.card, "diff");
-	captured.push(view);
+// Settle twice: stamps must attach to each fresh projection (kernel-side
+// snapshot makes every call independent, so no drift can accumulate).
+for (let settle = 0; settle < 2; settle++) {
+	const meta = tools.get("edit").output.presentationMeta({}, { before, after });
+	captured.push(meta);
 }
-const [first] = captured;
+const [first, second] = captured;
 // Deletion hunk: charlie starts at file line 3, echo now on line 3 after delta's removal.
 assert.equal(first.diffs[0].oldStart, 3, "old start of deletion hunk");
 assert.equal(first.diffs[0].newStart, 3, "new start of deletion hunk");
@@ -122,8 +102,43 @@ assert.equal(first.diffs[0].newStart, 3, "new start of deletion hunk");
 assert.equal(first.diffs[1].oldStart, 7, "old start of modification hunk");
 assert.equal(first.diffs[1].newStart, 6, "new start shifted by deleted line");
 
-// Idempotent serves do not accumulate drift.
-assert.equal(captured[1].diffs[0].oldStart, 3);
-assert.equal(captured[1].diffs[1].newStart, 6);
+// Independent settles do not accumulate drift.
+assert.equal(second.diffs[0].oldStart, 3);
+assert.equal(second.diffs[1].newStart, 6);
 
-console.log("PASS host anchors: starts, shifts, repeated serves");
+// Create (write): old side has no text, so only the new side stamps.
+tools.register({
+	name: "write",
+	output: {
+		presentationMeta() {
+			return { diffs: [{ path: "/w/new.txt", oldText: null, newText: "one\ntwo\n" }] };
+		},
+	},
+});
+// Registered after apply, so only the dispatch gate wraps it: the settled
+// call must flow through createSuccessResult like the kernel does.
+const created = tools.createSuccessResult({}, tools.get("write"), { before: null, after: "one\ntwo\n" });
+assert.equal(created.diffs[0].newStart, 1, "create stamps the new side");
+assert.equal(created.diffs[0].oldStart, undefined, "create leaves the old side unstamped");
+
+// A value without the settled texts stays untouched (no stamps, no throw).
+const untouched = tools.get("edit").output.presentationMeta({}, {});
+assert.equal(untouched.diffs[0].oldStart, undefined, "malformed value stays unstamped");
+
+// Dispatch gate: a scope-resolved definition that mounted OUTSIDE any
+// registration this plugin saw (pre-mounted agent) still gets wrapped when
+// its first dispatch resolves it through createSuccessResult.
+const scopedEdit = {
+	name: "edit",
+	output: { presentationMeta() { return { diffs: metaDiffs() }; } },
+};
+const scopedMeta = tools.createSuccessResult({}, scopedEdit, { before, after });
+assert.equal(scopedMeta.diffs[0].oldStart, 3, "dispatch gate wraps pre-mounted scopes");
+assert.equal(scopedMeta.diffs[1].newStart, 6, "dispatch gate stamps like the direct path");
+
+// Unload restores the original projector: fresh projections go out unstamped.
+for (const dispose of disposers) dispose();
+const restored = tools.get("edit").output.presentationMeta({}, { before, after });
+assert.equal(restored.diffs[0].oldStart, undefined, "unload restores the bare projector");
+
+console.log("PASS host anchors: starts, shifts, repeated settles, create, restore");

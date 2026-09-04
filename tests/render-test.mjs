@@ -57,8 +57,9 @@ const collect = (name) => {
 const InlineDiffRow = collect("tool.call.toolview")[0];
 if (typeof InlineDiffRow !== "function") throw new Error("toolview component not resolved");
 
-// Unstamped hunks render no numbers in SSR (the locate fallback runs in a
-// browser effect; without a trustworthy base the gutter stays blank).
+// Unstamped hunks number window-relatively (dsh-diff-stat's gutter policy):
+// the locate fallback runs in a browser effect, but the gutter always
+// renders — SSR shows side positions 1..N on both panes.
 const unstampedBlock = {
 	kind: "edit",
 	resultView: {
@@ -73,7 +74,13 @@ const unstampedBlock = {
 const html = renderToString(React.createElement(InlineDiffRow, {
 	block: unstampedBlock, toolName: "edit", cwd: "/w", home: "/h",
 }));
-if (/<span class="did-num">\d+</.test(html)) throw new Error("numbers rendered without a base");
+for (const expected of [1, 2, 3]) {
+	const hits = html.split('<span class="did-num">' + expected + "</span>").length - 1;
+	if (hits < 2) throw new Error("missing fallback gutter number " + expected + " on both sides");
+}
+// Unknown bases reserve a 4-digit lane so the late locate re-render cannot
+// rewrap the card (a post-paint height shift latches follow-scroll off).
+if (!html.includes("--did-num-w:4ch")) throw new Error("unknown-base lane not reserved at 4ch");
 
 // Stamped hunks (host serve-time oldStart/newStart anchors) number every row:
 // three modified rows → old 10..12, new 12..14.
@@ -98,6 +105,9 @@ for (const expected of [10, 11, 12, 13, 14]) {
 		throw new Error("missing gutter number " + expected);
 	}
 }
+// The gutter lane sizes to the card's largest rendered number (min 3ch);
+// 14 → 2 digits → clamped to 3ch.
+if (!stampedHtml.includes("--did-num-w:3ch")) throw new Error("gutter width var missing");
 
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
@@ -105,7 +115,7 @@ const checks = [
 	["word chip present", /did-insword/.test(html)],
 	["chip merged with token class", /class="hljs-keyword did-insword"|class="did-insword hljs-keyword"/.test(html)],
 	["row tint present", /did-insbg/.test(html)],
-	["no numbers without a base", !/<span class="did-num">\d+</.test(html)],
+	["fallback numbers without a base", /<span class="did-num">1<\/span>/.test(html)],
 	["no sign markers", !/did-sign/.test(html)],
 	["file head stats", /did-filehead/.test(html)],
 ];

@@ -109,6 +109,31 @@ for (const expected of [10, 11, 12, 13, 14]) {
 // 14 → 2 digits → clamped to 3ch.
 if (!stampedHtml.includes("--did-num-w:3ch")) throw new Error("gutter width var missing");
 
+// Similarity pairing: a comment inserted above an edited line must not steal
+// the edit's counterpart (the old run-order pairing chipped the edited line
+// against the comment and left the real change a pure addition). The old
+// line pairs with the similar new line — chips land on the changed number —
+// and the comment stays a pure addition. Stats keep counting full runs.
+const pairBlock = {
+	kind: "edit",
+	resultView: {
+		card: "diff",
+		diffs: [{
+			path: "lib/client.js",
+			oldText: "const attempts = 1;\n",
+			newText: "// retried twice\nconst attempts = 2;\n",
+		}],
+	},
+};
+const pairHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: pairBlock, toolName: "edit", cwd: "/w", home: "/h",
+}));
+const pairChecks = [
+	["edited line pairs across the inserted comment", /did-insword[^>]*>2</.test(pairHtml)],
+	["removed chip on the old number", /did-delword[^>]*>1</.test(pairHtml)],
+	["stats still count full runs", pairHtml.includes('did-addnum">+2') && pairHtml.includes("did-delnum\">−1")],
+];
+
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
 	["hljs comment span", /hljs-comment/.test(html)],
@@ -120,7 +145,7 @@ const checks = [
 	["file head stats", /did-filehead/.test(html)],
 ];
 let failed = 0;
-for (const [name, ok] of checks) {
+for (const [name, ok] of [...checks, ...pairChecks]) {
 	console.log((ok ? "PASS" : "FAIL") + " " + name);
 	if (!ok) failed++;
 }

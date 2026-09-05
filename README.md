@@ -13,7 +13,7 @@ By default the DeepSeek Harness web GUI collapses each file edit into a tiny one
 
 ## What it looks like
 
-A typical edit: changed lines paired side by side, with the exact words that changed highlighted:
+A typical edit: changed lines paired side by side, with the exact words that changed highlighted. Pairs are matched by similarity, so an insertion placed above an edited line (a comment, a blank line) does not steal the changed line's counterpart — unmatched lines simply render as plain additions or removals:
 
 ![A diff card of an edit, with changed words highlighted](docs/screenshot-compact-card.png)
 

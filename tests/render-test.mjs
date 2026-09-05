@@ -137,6 +137,30 @@ const pairChecks = [
 	["insertion renders above its pair", pairHtml.indexOf("// retried twice") < pairHtml.indexOf("did-insword")],
 ];
 
+// Containment pairing: a line embedded in a longer counterpart — a call
+// wrapped in a spread/conditional — scores too low on symmetric Dice (the
+// wrapper tokens dilute it) but must still pair, so the word chips show the
+// real change instead of a bare removal next to a bare addition.
+const spreadBlock = {
+	kind: "edit",
+	resultView: {
+		card: "diff",
+		diffs: [{
+			path: "lib/client.js",
+			oldText: "customerPhone: \"0201 555000\",\n",
+			newText: "...(options?.withoutPhone ? {} : { customerPhone: \"0201 555000\" }),\n",
+		}],
+	},
+};
+const spreadHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: spreadBlock, toolName: "edit", cwd: "/w", home: "/h",
+}));
+pairChecks.push(
+	// The removed side is fully contained, so it carries no changed tokens;
+	// a chip on the added side only exists once the rows pair as modified.
+	["embedded line still pairs", /did-insword/.test(spreadHtml)],
+);
+
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
 	["hljs comment span", /hljs-comment/.test(html)],

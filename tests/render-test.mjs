@@ -132,6 +132,9 @@ const pairChecks = [
 	["edited line pairs across the inserted comment", /did-insword[^>]*>2</.test(pairHtml)],
 	["removed chip on the old number", /did-delword[^>]*>1</.test(pairHtml)],
 	["stats still count full runs", pairHtml.includes('did-addnum">+2') && pairHtml.includes("did-delnum\">−1")],
+	// Row order: the insertion renders above the pair it precedes, so the
+	// right column's numbers read 1, 2 instead of 2, 1.
+	["insertion renders above its pair", pairHtml.indexOf("// retried twice") < pairHtml.indexOf("did-insword")],
 ];
 
 const checks = [

@@ -233,6 +233,22 @@ pairChecks.push(
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
 	["hljs comment span", /hljs-comment/.test(html)],
+	["svelte directive keyword", (() => {
+		const svelteHtml = renderToString(React.createElement(InlineDiffRow, {
+			block: {
+				kind: "edit",
+				resultView: {
+					card: "diff",
+					diffs: [{
+						path: "routes/+page.svelte",
+						oldText: "{#if on}\n\t<p>on</p>\n{/if}\n",
+						newText: "{#if off}\n\t<p>off</p>\n{/if}\n",
+					}],
+				},
+			}, toolName: "edit", cwd: "/w", home: "/h",
+		}));
+		return /hljs-keyword[^<]*>#if</.test(svelteHtml) || /<span class="hljs-keyword">#[^<]*<\/span>/.test(svelteHtml);
+	})()],
 	["word chip present", /did-insword/.test(html)],
 	["chip merged with token class", /class="hljs-keyword did-insword"|class="did-insword hljs-keyword"/.test(html)],
 	["row tint present", /did-insbg/.test(html)],

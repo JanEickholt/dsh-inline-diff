@@ -81,6 +81,10 @@ dsh plugin --profile web add github:JanEickholt/dsh-inline-diff
 
 Contributions of any kind are welcome: code, bug reports, docs, design ideas, screenshots, or just telling us what confused you. Open an issue or a pull request; nothing is too small.
 
+### Layout
+
+The client ships as a single self-contained file because DSH loads it as one module. Its source of truth is `src/`, split per concern (`line-diff.js`, `render.js`, `style.js`, `i18n.js`, …). `pnpm build` (or `pnpm test`, which builds first) concatenates those blocks into `lib/client.js`. Edit files under `src/`, never `lib/client.js` directly. The two-tab indentation on code lines mirrors the module-loader wrapper the generated file is wrapped in; blank-line placement between blocks is added by the build.
+
 ## About this project
 
 This plugin was written by an AI coding agent (with a human steering it).

@@ -42,7 +42,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node tests/render-test.mjs && node tests/host-anchor-test.mjs"
+    "build": "node tools/build-client.mjs",
+    "test": "node tools/build-client.mjs && node tests/render-test.mjs && node tests/host-anchor-test.mjs"
   },
   "repository": {
     "type": "git",

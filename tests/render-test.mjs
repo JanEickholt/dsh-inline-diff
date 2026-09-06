@@ -212,8 +212,8 @@ pairChecks.push(
 	["indent change never chips whitespace", !/(did-delword|did-insword)[^>]*>\s/.test(indentHtml)],
 );
 
-// Blank changed lines render as an edge-marked blank row (did-blank), not a
-// full-width tinted bar.
+// Blank changed lines tint like any other changed row — no ⏎ glyph, no
+// transparent-bar special case.
 const blankBlock = {
 	kind: "edit",
 	resultView: {
@@ -229,8 +229,9 @@ const blankHtml = renderToString(React.createElement(InlineDiffRow, {
 	block: blankBlock, toolName: "edit", cwd: "/w", home: "/h",
 }));
 pairChecks.push(
-	["blank changed row keeps edge class", /did-delbg did-blank/.test(blankHtml) || /did-insbg did-blank/.test(blankHtml)],
-	["blank changed row has no word chip", !/did-blank[^>]*did-delword/.test(blankHtml)],
+	["blank changed row keeps tint class", /did-(del|ins)bg/.test(blankHtml)],
+	["blank changed row has no enter glyph", !blankHtml.includes("⏎")],
+	["blank changed row has no word chip", !/did-(del|ins)bg[^>]*did-(del|ins)word[^>]*>(?:<[^>]+>)*\s*</.test(blankHtml)],
 );
 
 // One removal replaced by a multi-line block (the screenshot case): chips

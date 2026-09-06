@@ -1,7 +1,7 @@
 {
   "name": "dsh-inline-diff",
   "version": "1.5.0",
-  "description": "Renders edit and write tool calls as always-expanded side-by-side diffs, with optional syntax coloring and word-level highlighting.",
+  "description": "Renders edit and write tool calls as always-expanded side-by-side diffs styled like git diff, with optional syntax coloring and word-level highlighting.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -27,6 +27,12 @@
     "deepseek",
     "deepseek-harness",
     "diff",
+    "git",
+    "git-diff",
+    "diff-viewer",
+    "side-by-side",
+    "word-diff",
+    "syntax-highlighting",
     "web-plugin"
   ],
   "files": [

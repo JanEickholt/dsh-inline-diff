@@ -133,8 +133,11 @@ const pairChecks = [
 	["removed chip on the old number", /did-delword[^>]*>1</.test(pairHtml)],
 	["stats still count full runs", pairHtml.includes('did-addnum">+2') && pairHtml.includes("did-delnum\">−1")],
 	// Row order: the insertion renders above the pair it precedes, so the
-	// right column's numbers read 1, 2 instead of 2, 1.
-	["insertion renders above its pair", pairHtml.indexOf("// retried twice") < pairHtml.indexOf("did-insword")],
+	// right column's numbers read 1, 2 instead of 2, 1. The comment line is
+	// wholly novel, so run-level chips suppress its chip (tint only) and its
+	// text renders unsplit — anchor on the paired row's chip on "2".
+	["insertion renders above its pair",
+		pairHtml.indexOf("// retried twice") < pairHtml.search(/did-insword[^>]*>2</)],
 ];
 
 // Containment pairing: a line embedded in a longer counterpart — a call
@@ -228,6 +231,31 @@ const blankHtml = renderToString(React.createElement(InlineDiffRow, {
 pairChecks.push(
 	["blank changed row keeps edge class", /did-delbg did-blank/.test(blankHtml) || /did-insbg did-blank/.test(blankHtml)],
 	["blank changed row has no word chip", !/did-blank[^>]*did-delword/.test(blankHtml)],
+);
+
+// One removal replaced by a multi-line block (the screenshot case): chips
+// come from a run-level token diff, so text that survives on a sibling new
+// line stays plain and only genuinely novel tokens chip — on both sides.
+const blockBlock = {
+	kind: "edit",
+	resultView: {
+		card: "diff",
+		diffs: [{
+			path: "lib/client.js",
+			oldText: "        return hours.enabled && local.weekday === hours.weekday && local.minute >= hours.openMinute && local.minute < hours.closeMinute;\n",
+			newText: "        return (\n            hours.enabled &&\n            local.weekday === hours.weekday &&\n            isMinuteWithinWindows(local.minute, hours.windows)\n        );\n",
+		}],
+	},
+};
+const blockHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: blockBlock, toolName: "edit", cwd: "/w", home: "/h",
+}));
+pairChecks.push(
+	["novel call chips on the added side", /did-insword[^>]*>isMinuteWithinWindows</.test(blockHtml)],
+	["novel paren chips on the added side", /did-insword[^>]*>\(/.test(blockHtml)],
+	["survived prefix stays plain on the removed side", !/did-delword[^>]*>return</.test(blockHtml)],
+	["survived weekday line stays plain on the added side", !/did-insword[^>]*>weekday</.test(blockHtml)],
+	["removed tail still chips", /did-delword[^>]*>closeMinute</.test(blockHtml)],
 );
 
 const checks = [

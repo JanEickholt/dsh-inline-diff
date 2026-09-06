@@ -259,6 +259,32 @@ pairChecks.push(
 	["removed tail still chips", /did-delword[^>]*>closeMinute</.test(blockHtml)],
 );
 
+// Merge anchor: a one-line statement folded into a multi-line block contains
+// several fragments, so greedy similarity would anchor the pair at the
+// highest-scoring fragment — a mid-block continuation — and the red line
+// floats inside the green block. The rewrite reads head-first: the removed
+// line pairs with the block's first line and the pair leads the run.
+const foldBlock = {
+	kind: "edit",
+	resultView: {
+		card: "diff",
+		diffs: [{
+			path: "lib/client.js",
+			oldText: "await expect(load({ locals: { tenant: { id: 'tenant-1' } } } as never)).resolves.toEqual({ catalog: null });\n",
+			newText: "await expect(load({ locals: { tenant: { id: 'tenant-1' } }\n} } as never)).resolves.toEqual({\n\tcatalog: null,\n\tstub: false\n});\n",
+		}],
+	},
+};
+const foldHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: foldBlock, toolName: "edit", cwd: "/w", home: "/h",
+}));
+pairChecks.push(
+	// The left grid renders before the right one, so the first changed cell
+	// in the html is the run's first left cell: the modified row's delbg
+	// leads, instead of an added row's void cell.
+	["folded statement pairs at the block head", foldHtml.indexOf("did-delbg") < foldHtml.indexOf("did-void")],
+);
+
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
 	["hljs comment span", /hljs-comment/.test(html)],

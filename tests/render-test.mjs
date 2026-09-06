@@ -187,6 +187,49 @@ pairChecks.push(
 	["stacked row shares its data-ri", swapHtml.split('data-ri="0"').length - 1 === 2],
 );
 
+// Whitespace-only word chips: an indent-only chip paints a full-width bar
+// before the text, so whitespace tokens must stay chip-free even when the
+// diff marks them changed.
+const indentBlock = {
+	kind: "edit",
+	resultView: {
+		card: "diff",
+		diffs: [{
+			path: "lib/client.js",
+			oldText: "if (ready) {\n\t\tgo();\n}\n",
+			newText: "if (ready) {\n\tgo();\n}\n",
+		}],
+	},
+};
+const indentHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: indentBlock, toolName: "edit", cwd: "/w", home: "/h",
+}));
+pairChecks.push(
+	["indent change keeps row tint", /did-delbg/.test(indentHtml) && /did-insbg/.test(indentHtml)],
+	["indent change never chips whitespace", !/(did-delword|did-insword)[^>]*>\s/.test(indentHtml)],
+);
+
+// Blank changed lines render as an edge-marked blank row (did-blank), not a
+// full-width tinted bar.
+const blankBlock = {
+	kind: "edit",
+	resultView: {
+		card: "diff",
+		diffs: [{
+			path: "lib/client.js",
+			oldText: "a();\n\nb();\n",
+			newText: "a();\nb();\n",
+		}],
+	},
+};
+const blankHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: blankBlock, toolName: "edit", cwd: "/w", home: "/h",
+}));
+pairChecks.push(
+	["blank changed row keeps edge class", /did-delbg did-blank/.test(blankHtml) || /did-insbg did-blank/.test(blankHtml)],
+	["blank changed row has no word chip", !/did-blank[^>]*did-delword/.test(blankHtml)],
+);
+
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
 	["hljs comment span", /hljs-comment/.test(html)],

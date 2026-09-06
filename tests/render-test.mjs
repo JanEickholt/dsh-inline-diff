@@ -161,6 +161,32 @@ pairChecks.push(
 	["embedded line still pairs", /did-insword/.test(spreadHtml)],
 );
 
+// 1:1 stacking: one removed line and one added line always render as a
+// single modified row, even when token similarity scores 0 — there is no
+// other candidate to mispair against, and a del/add replacement belongs on
+// one row. Previously the weak pair stayed one-sided and the replacement
+// stacked as a red row above a green row on opposite sides.
+const swapBlock = {
+	kind: "edit",
+	resultView: {
+		card: "diff",
+		diffs: [{
+			path: "lib/client.js",
+			oldText: "const tenantRoles = identityRoles.filter((role) => role !== 'owner');\n",
+			newText: "const tenantRoles: readonly string[] = TENANT_ROLES;\n",
+		}],
+	},
+};
+const swapHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: swapBlock, toolName: "edit", cwd: "/w", home: "/h",
+}));
+pairChecks.push(
+	// One-sided rows fill their counterpart cell with did-void; a modified
+	// row renders del/ins cells sharing one data-ri and no void cell.
+	["1:1 weak pair stacks as one row", !swapHtml.includes("did-void")],
+	["stacked row shares its data-ri", swapHtml.split('data-ri="0"').length - 1 === 2],
+);
+
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
 	["hljs comment span", /hljs-comment/.test(html)],

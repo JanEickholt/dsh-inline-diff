@@ -340,6 +340,32 @@ for (const [name, ok] of failedChecks) {
 	if (!ok) failed++;
 }
 
+// Whole-file write fallback: the new harness records meta.diffs: [] for a
+// created file (before === null), so the card falls back to the
+// argument-derived whole-file hunk whose oldText is "" — a null there used
+// to crash the hunkKey, abdicating the slot entry and falling every further
+// edit/write card back to the stock row.
+const writeHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: {
+		kind: "write",
+		isError: false,
+		meta: { diffs: [] },
+		call: { name: "write", argsRaw: JSON.stringify({
+			file_path: "fix-pr-124.py",
+			content: "#!/usr/bin/env python3\nprint('hi')\n",
+		}) },
+	},
+	toolName: "write", cwd: "/w", home: "/h",
+}));
+const writeChecks = [
+	["created write renders whole-file card", /did-grid/.test(writeHtml)],
+	["created write is all added", /did-insbg/.test(writeHtml) && !/did-delbg/.test(writeHtml)],
+];
+for (const [name, ok] of writeChecks) {
+	console.log((ok ? "PASS" : "FAIL") + " " + name);
+	if (!ok) failed++;
+}
+
 // Settings card smoke: renders its header with the updated description.
 const DiffHighlightCard = collect("settings.plugin.item")[0];
 if (typeof DiffHighlightCard !== "function") throw new Error("card component not resolved");

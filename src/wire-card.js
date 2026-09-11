@@ -34,15 +34,20 @@
 				return null;
 			}
 			if (args == null || typeof args !== "object" || Array.isArray(args)) return null;
+			// oldText is "" (never null): every hunk consumer reads it as a
+			// string, and the new harness records meta.diffs: [] for created
+			// files, so this argument-derived hunk is the only diff a write
+			// card gets. An empty old side diffs as all-added, which is the
+			// intended whole-file view.
 			if (name === "write") {
 				return typeof args.content === "string" && typeof args.file_path === "string"
-					? { path: args.file_path, oldText: null, newText: args.content }
+					? { path: args.file_path, oldText: "", newText: args.content }
 					: null;
 			}
 			if (name !== "edit") return null;
 			if (typeof args.file_path !== "string" || args.file_path === "") return null;
 			if (typeof args.old_string !== "string" || typeof args.new_string !== "string") return null;
-			return { path: args.file_path, oldText: args.old_string || null, newText: args.new_string };
+			return { path: args.file_path, oldText: args.old_string, newText: args.new_string };
 		}
 
 		// Settled blocks carry the applied diffs in meta.diffs; running calls

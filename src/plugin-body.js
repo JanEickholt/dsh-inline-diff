@@ -32,6 +32,33 @@
 				};
 			}, "dsh-inline-diff: stylevault marker");
 
+			// Toggle .did-we-themed on <html> while dsh-wallpaper-engine's
+			// wallpaper layers are live (body[data-we-wallpaper]) AND the
+			// wallpaper pref is on, so the stylesheet can adopt the
+			// liquid-glass recipe without a reload.
+			ctx.effect(() => {
+				const docEl = document.documentElement;
+				const sync = () => {
+					try {
+						const live = document.body !== null
+							&& document.body.hasAttribute("data-we-wallpaper");
+						docEl.classList.toggle("did-we-themed", live && getWallpaperGlass());
+					} catch { /* head-less test harness: no DOM to inspect */ }
+				};
+				sync();
+				let obs = null;
+				if (typeof MutationObserver === "function" && document.body) {
+					obs = new MutationObserver(sync);
+					obs.observe(document.body, { attributes: true, attributeFilter: ["data-we-wallpaper"] });
+				}
+				const unhook = onWallpaperGlass(sync);
+				return () => {
+					unhook();
+					if (obs) obs.disconnect();
+					try { docEl.classList.remove("did-we-themed"); } catch { /* head-less */ }
+				};
+		}, "dsh-inline-diff: wallpaper marker");
+
 			const scope = ctx.settingsScope.bind({ namespace: SETTINGS_NAMESPACE });
 			const adoptScope = () => {
 				const snapshot = scope.getSnapshot();
@@ -40,6 +67,7 @@
 				setKeepIndent(section !== undefined && section[INDENT_FIELD] === INDENT_KEEP);
 				setSyntaxOn(section === undefined || section[SYNTAX_FIELD] !== SYNTAX_OFF);
 				setNumbersOn(section === undefined || section[NUMBERS_FIELD] !== NUMBERS_OFF);
+				setWallpaperGlass(section === undefined || section[WALLPAPER_FIELD] !== WALLPAPER_OFF);
 				adoptSettingsState(snapshot);
 			};
 			ctx.effect(() => scope.subscribe(adoptScope), "dsh-inline-diff: settings adoption");
@@ -60,6 +88,10 @@
 				setNumbersOn(mode !== NUMBERS_OFF); // optimistic echo; adoption confirms
 				scope.set(NUMBERS_FIELD, mode).catch(adoptScope);
 			};
+			const writeWallpaper = (mode) => {
+				setWallpaperGlass(mode !== WALLPAPER_OFF); // optimistic echo; adoption confirms
+				scope.set(WALLPAPER_FIELD, mode).catch(adoptScope);
+			};
 
 			// Follow the GUI language while the optional locale service is
 			// composed; without one, the browser-derived seed stands.
@@ -79,7 +111,7 @@
 			ctx.slots.inject("settings.plugin.item", () => ctx.slots.register({
 				name: "settings.plugin.item",
 				key: SETTINGS_NAMESPACE,
-				inject: () => ({ setHighlight: writeHighlight, setIndent: writeIndent, setSyntax: writeSyntax, setNumbers: writeNumbers })
+				inject: () => ({ setHighlight: writeHighlight, setIndent: writeIndent, setSyntax: writeSyntax, setNumbers: writeNumbers, setWallpaper: writeWallpaper })
 			}, DiffHighlightCard));
 		}
 

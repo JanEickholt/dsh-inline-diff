@@ -44,12 +44,58 @@
 
 /* Native headers paint brand 12% over the surface, not the flat banner alias.
    While stylevault's paint layers are live (head watcher toggles .did-sv-themed),
-   diff cards copy that rendered recipe; otherwise the alias above stands. The
-   Plugins-page card is excluded: its ladder below re-themes through the alias
-   tokens anyway. */
+   diff cards copy that rendered recipe; while wallpaper-engine's wallpaper
+   layers are live (body watcher toggles .did-we-themed) and the wallpaper pref
+   is on, they adopt its liquid-glass recipe below. Otherwise the alias above
+   stands. The Plugins-page card is excluded: its ladder below re-themes
+   through the alias tokens anyway. */
 .did-sv-themed .did-root {
 	--did-banner: color-mix(in srgb, var(--dsw-alias-brand-primary, #808080) 12%, var(--did-surface));
 	--did-sep: color-mix(in srgb, var(--dsw-alias-label-tertiary, #8b8f94) 25%, transparent);
+}
+
+/* While dsh-wallpaper-engine's wallpaper layers are live (body watcher toggles
+   .did-we-themed) and the wallpaper pref is on, diff cards copy the plugin's
+   conversation liquid-glass recipe. All --we-* vars are written on <body>
+   inline style by wallpaper-engine (applyEffects), so they inherit here and
+   the card tracks its 玻璃 slider live. Surface/banner weights mirror the
+   bubble (×0.8) and composer (×1.0) alphas of --we-glass-alpha. */
+.did-we-themed .did-root {
+	--did-surface: rgba(255, 255, 255, calc(var(--we-glass-alpha, 0.15) * 0.8));
+	--did-banner: rgba(255, 255, 255, var(--we-glass-alpha, 0.15));
+	--did-sep: rgba(255, 255, 255, 0.08);
+	background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 38%, rgba(255, 255, 255, 0.02));
+	-webkit-backdrop-filter: blur(var(--we-blur, 16px)) saturate(var(--we-saturate, 1.8)) brightness(var(--we-glass-brightness, 1.04)) contrast(1.01);
+	backdrop-filter: blur(var(--we-blur, 16px)) saturate(var(--we-saturate, 1.8)) brightness(var(--we-glass-brightness, 1.04)) contrast(1.01);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, var(--we-glass-highlight, 0.32)),
+		inset 0 -1px 0 rgba(255, 255, 255, 0.08),
+		inset 0 0 0 0.5px rgba(255, 255, 255, 0.08),
+		0 12px 40px rgba(0, 0, 0, var(--we-glass-shadow, 0.12));
+}
+
+/* Dark scheme: wallpaper-engine drops the white base to ×0.4 (composer) /
+   ×0.33 (bubbles); combined selector expresses "marker on <html> + dark attr
+   on <body>" without :has() (wallpaper-engine dropped :has() rules after
+   ancestor-invalidation repaint storms). */
+html.did-we-themed body[data-ds-dark-theme] .did-root {
+	--did-surface: rgba(255, 255, 255, calc(var(--we-glass-alpha, 0.15) * 0.33));
+	--did-banner: rgba(255, 255, 255, calc(var(--we-glass-alpha, 0.15) * 0.4));
+}
+
+/* No backdrop-filter support: the blur cannot frost, so text would sit on the
+   raw wallpaper. Revert to the stock opaque recipe (same policy as
+   wallpaper-engine's near-opaque fallbacks). */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+	.did-we-themed .did-root {
+		--did-surface: var(--dsw-alias-markdown-code-block, #1b1b1c);
+		--did-banner: var(--dsw-alias-markdown-code-block-banner, #2c2c2e);
+		--did-sep: transparent;
+		background-image: none;
+		-webkit-backdrop-filter: none;
+		backdrop-filter: none;
+		box-shadow: none;
+	}
 }
 
 .did-root {
@@ -239,7 +285,11 @@ button.did-path:hover {
 /* Plugins-page card: remap its surfaces to the page's bg-layer ladder, which
    native settings cards here render with, so it matches siblings under the
    stock theme and under any stylevault preset. The code-block family above
-   stays reserved for conversation diff cards. */
+   stays reserved for conversation diff cards. No wallpaper rules here: under
+   body[data-we-glass-window] wallpaper-engine remaps the bg-layer aliases to
+   translucent color-mixes on the settings dialog and keeps the single
+   backdrop-filter there, so this card inherits the glass for free — its own
+   blur would double-frost (wallpaper-engine's nested-blur policy). */
 .did-card {
 	--did-banner: var(--dsw-alias-bg-layer-3, #383a42);
 	/* native open accordion surface: one step below the closed elevation */

@@ -25,6 +25,9 @@
 				"numbers.title": "Line numbers",
 				"numbers.on": "On",
 				"numbers.off": "Off",
+				"wallpaper.title": "Wallpaper glass",
+				"wallpaper.on": "On",
+				"wallpaper.off": "Off",
 				"stats.files": "{count} files · ",
 				"failed.badge": "{tool} failed — not applied",
 				"truncated.lines": "… {count} more lines (truncated)"
@@ -46,6 +49,9 @@
 				"numbers.title": "行号",
 				"numbers.on": "开",
 				"numbers.off": "关",
+				"wallpaper.title": "壁纸玻璃",
+				"wallpaper.on": "开",
+				"wallpaper.off": "关",
 				"stats.files": "{count} 个文件 · ",
 				"failed.badge": "{tool} 失败 — 未应用",
 				"truncated.lines": "… 另有 {count} 行（已截断）"

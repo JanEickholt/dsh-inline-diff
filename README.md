@@ -35,6 +35,10 @@ Code rows are colored by a bundled highlight.js (the same language set the Solut
 
 [dsh-stylevault](https://github.com/GptsApp/dsh-stylevault) compatible: its Colors panel overrides exactly those `--shiki-token-*` variables, so restyling your theme there restyles the diff cards too.
 
+## Wallpaper glass
+
+With [dsh-wallpaper-engine](https://github.com/elysia395/dsh-wallpaper-engine) installed and a wallpaper live, diff cards adopt its liquid-glass look: a translucent surface, a frosted blur of the wallpaper behind them, and the same specular sheen the composer and message bubbles use. Blur strength and transparency follow wallpaper-engine's own glass sliders. Prefer the stock opaque cards? Pick *Off* under **Settings → Plugins → Inline diff → Wallpaper glass**. Like the other choices, this is saved and survives restarts.
+
 ## Themes
 
 Every color on the card, from surfaces and text to borders and the green/red diff tints, is derived from your GUI's theme tokens (Settings → Appearance). The card follows light mode, dark mode, and any custom accent colors instead of a fixed palette. The syntax token colors ride the same system (the GUI's shiki code palette); before any theme variables exist they simply render as the card's plain text color.

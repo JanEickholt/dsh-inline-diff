@@ -372,4 +372,8 @@ if (typeof DiffHighlightCard !== "function") throw new Error("card component not
 const cardHtml = renderToString(React.createElement(DiffHighlightCard, {}));
 console.log((/Syntax, diff highlighting/.test(cardHtml) ? "PASS" : "FAIL") + " card description");
 if (!/Syntax, diff highlighting/.test(cardHtml)) failed++;
+// Rows render only while expanded; the open seed server-renders the body.
+const cardOpenHtml = renderToString(React.createElement(DiffHighlightCard, { open: true }));
+console.log((/Wallpaper glass/.test(cardOpenHtml) ? "PASS" : "FAIL") + " card wallpaper row");
+if (!/Wallpaper glass/.test(cardOpenHtml)) failed++;
 process.exit(failed === 0 ? 0 : 1);

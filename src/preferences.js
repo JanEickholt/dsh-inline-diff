@@ -16,6 +16,9 @@
 		const NUMBERS_FIELD = "numbers";
 		const NUMBERS_ON = "on";
 		const NUMBERS_OFF = "off";
+		const WALLPAPER_FIELD = "wallpaper";
+		const WALLPAPER_ON = "on";
+		const WALLPAPER_OFF = "off";
 
 		let wordsMode = true;
 		const wordsListeners = new Set();
@@ -91,6 +94,27 @@
 		function onNumbersOn(listener) {
 			numbersOnListeners.add(listener);
 			return () => { numbersOnListeners.delete(listener); };
+		}
+
+		// Durable `inline-diff.wallpaper` ("on" | "off"); on by default. While
+		// on and dsh-wallpaper-engine's wallpaper is live, diff cards adopt
+		// its glass.
+		let wallpaperGlassMode = true;
+		const wallpaperGlassListeners = new Set();
+
+		function getWallpaperGlass() {
+			return wallpaperGlassMode;
+		}
+
+		function setWallpaperGlass(enabled) {
+			if (wallpaperGlassMode === enabled) return;
+			wallpaperGlassMode = enabled;
+			for (const listener of [...wallpaperGlassListeners]) listener(enabled);
+		}
+
+		function onWallpaperGlass(listener) {
+			wallpaperGlassListeners.add(listener);
+			return () => { wallpaperGlassListeners.delete(listener); };
 		}
 
 		// Whether the Host serves the namespace (a card must leave no trace

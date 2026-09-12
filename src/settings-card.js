@@ -1,10 +1,11 @@
 		//#region plugin settings card
 		// Settings card: Words (token chips on paired rows) vs Lines-only (row
-		// tint), Strip vs Keep for shared leading indentation, Syntax on/off.
-		// Reads through the shared mode subscriptions; writes go through the
-		// injected setters, which echo optimistically and let the scope
-		// subscription confirm. Hidden while the Host does not serve the
-		// namespace; buttons disable while the document is read-only.
+		// tint), Strip vs Keep for shared leading indentation, Syntax on/off,
+		// Wallpaper glass on/off. Reads through the shared mode subscriptions;
+		// writes go through the injected setters, which echo optimistically
+		// and let the scope subscription confirm. Hidden while the Host does
+		// not serve the namespace; buttons disable while the document is
+		// read-only.
 		function chevron(open) {
 			return react.createElement("span", { className: "did-chev" + (open ? " did-chevopen" : "") },
 				react.createElement("svg", {
@@ -29,6 +30,7 @@
 			const setIndent = props && props.setIndent;
 			const setSyntax = props && props.setSyntax;
 			const setNumbers = props && props.setNumbers;
+			const setWallpaper = props && props.setWallpaper;
 			const [words, setWords] = react.useState(getWordsMode());
 			react.useEffect(() => onWordsMode(setWords), []);
 			const [keepIndent, setKeepIndent] = react.useState(getKeepIndent());
@@ -37,20 +39,26 @@
 			react.useEffect(() => onSyntaxOn(setSyntaxOn), []);
 			const [numbersOn, setNumbersOn] = react.useState(getNumbersOn());
 			react.useEffect(() => onNumbersOn(setNumbersOn), []);
+			const [wallpaperGlass, setWallpaperGlass] = react.useState(getWallpaperGlass());
+			react.useEffect(() => onWallpaperGlass(setWallpaperGlass), []);
 			const [settings, setSettings] = react.useState(getSettingsState());
 			react.useEffect(() => onSettingsState(setSettings), []);
 			// Re-render on GUI-language switches; copy resolves through tr().
 			const [, rerenderOnLocale] = react.useReducer((count) => count + 1, 0);
 			react.useEffect(() => onLocale(rerenderOnLocale), []);
-			const [open, setOpen] = react.useState(false);
+			// `open` only seeds the collapsed/expanded state; tests use it to
+			// server-render the rows. Slot inject never passes it.
+			const [open, setOpen] = react.useState(Boolean(props && props.open));
 			if (!settings.ready) return null;
 			const writable = settings.writable
 				&& typeof setHighlight === "function" && typeof setIndent === "function"
-				&& typeof setSyntax === "function" && typeof setNumbers === "function";
+				&& typeof setSyntax === "function" && typeof setNumbers === "function"
+				&& typeof setWallpaper === "function";
 			const choose = writable ? setHighlight : () => {};
 			const chooseIndent = writable ? setIndent : () => {};
 			const chooseSyntax = writable ? setSyntax : () => {};
 			const chooseNumbers = writable ? setNumbers : () => {};
+			const chooseWallpaper = writable ? setWallpaper : () => {};
 			return react.createElement("li", { className: "did-card" + (open ? " did-cardopen" : "") },
 				react.createElement("button", {
 					type: "button",
@@ -91,6 +99,13 @@
 						react.createElement("div", { className: "did-seg", role: "group", "aria-label": tr("numbers.title") },
 							segmentButton(NUMBERS_ON, tr("numbers.on"), numbersOn, chooseNumbers, !writable),
 							segmentButton(NUMBERS_OFF, tr("numbers.off"), !numbersOn, chooseNumbers, !writable)
+						)
+					),
+					react.createElement("div", { className: "did-setting" },
+						react.createElement("span", { className: "did-setting-title" }, tr("wallpaper.title")),
+						react.createElement("div", { className: "did-seg", role: "group", "aria-label": tr("wallpaper.title") },
+							segmentButton(WALLPAPER_ON, tr("wallpaper.on"), wallpaperGlass, chooseWallpaper, !writable),
+							segmentButton(WALLPAPER_OFF, tr("wallpaper.off"), !wallpaperGlass, chooseWallpaper, !writable)
 						)
 					)
 				) : null

@@ -39,6 +39,10 @@
 
 兼容 [dsh-stylevault](https://github.com/GptsApp/dsh-stylevault)：它的颜色面板覆盖的正是这组 `--shiki-token-*` 变量，在那里调整主题，diff 卡片会跟着变。
 
+## 壁纸玻璃
+
+安装 [dsh-wallpaper-engine](https://github.com/elysia395/dsh-wallpaper-engine) 且壁纸处于活动状态时，diff 卡片采用它的液态玻璃外观：半透明表面、对身后壁纸的毛玻璃模糊，以及与输入框和消息气泡一致的镜面高光。模糊强度与透明度跟随 wallpaper-engine 自己的「玻璃」滑杆。想要原生的不透明卡片？在 **设置 → 插件 → 行内 Diff → 壁纸玻璃** 下选择*关*。与其他选择一样，保存且重启后生效。
+
 ## 主题
 
 卡片上的每一种颜色——从表面、文字、边框到绿/红 diff 底色——都取自 GUI 的主题 token（设置 → 外观）。卡片会跟随浅色模式、深色模式以及自定义强调色，而不是固定配色。语法 token 颜色走同一套体系（GUI 的 shiki 代码配色）；主题变量尚不存在时，它们就是卡片的普通文字颜色。

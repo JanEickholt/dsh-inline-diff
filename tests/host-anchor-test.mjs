@@ -13,6 +13,7 @@ const stubZ = "data:text/javascript," + encodeURIComponent(`
 	const u = (v) => chainable();
 	u.object = (s) => s;
 	u.union = (v) => chainable();
+	u.number = (v) => chainable();
 	export default u;
 `);
 const plugged = source

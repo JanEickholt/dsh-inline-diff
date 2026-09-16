@@ -68,6 +68,8 @@
 				setSyntaxOn(section === undefined || section[SYNTAX_FIELD] !== SYNTAX_OFF);
 				setNumbersOn(section === undefined || section[NUMBERS_FIELD] !== NUMBERS_OFF);
 				setWallpaperGlass(section === undefined || section[WALLPAPER_FIELD] !== WALLPAPER_OFF);
+				setFoldRows(section !== undefined && section[FOLD_FIELD] === FOLD_ON);
+				setFoldKeep(section === undefined ? undefined : section[FOLD_LINES_FIELD]);
 				adoptSettingsState(snapshot);
 			};
 			ctx.effect(() => scope.subscribe(adoptScope), "dsh-inline-diff: settings adoption");
@@ -92,6 +94,14 @@
 				setWallpaperGlass(mode !== WALLPAPER_OFF); // optimistic echo; adoption confirms
 				scope.set(WALLPAPER_FIELD, mode).catch(adoptScope);
 			};
+			const writeFold = (mode) => {
+				setFoldRows(mode === FOLD_ON); // optimistic echo; adoption confirms
+				scope.set(FOLD_FIELD, mode).catch(adoptScope);
+			};
+			const writeFoldLines = (value) => {
+				setFoldKeep(value); // optimistic echo; adoption confirms
+				scope.set(FOLD_LINES_FIELD, value).catch(adoptScope);
+			};
 
 			// Follow the GUI language while the optional locale service is
 			// composed; without one, the browser-derived seed stands.
@@ -111,7 +121,7 @@
 			ctx.slots.inject("settings.plugin.item", () => ctx.slots.register({
 				name: "settings.plugin.item",
 				key: SETTINGS_NAMESPACE,
-				inject: () => ({ setHighlight: writeHighlight, setIndent: writeIndent, setSyntax: writeSyntax, setNumbers: writeNumbers, setWallpaper: writeWallpaper })
+				inject: () => ({ setHighlight: writeHighlight, setIndent: writeIndent, setSyntax: writeSyntax, setNumbers: writeNumbers, setWallpaper: writeWallpaper, setFold: writeFold, setFoldLines: writeFoldLines })
 			}, DiffHighlightCard));
 		}
 

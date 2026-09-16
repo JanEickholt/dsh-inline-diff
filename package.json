@@ -43,7 +43,7 @@
   ],
   "scripts": {
     "build": "node tools/build-client.mjs",
-    "test": "node tools/build-client.mjs && node tests/render-test.mjs && node tests/host-anchor-test.mjs"
+    "test": "node tools/build-client.mjs && node tests/render-test.mjs && node tests/fold-test.mjs && node tests/host-anchor-test.mjs"
   },
   "repository": {
     "type": "git",
@@ -58,6 +58,7 @@
     "@deepseek-ai/schemastery": "^3.18.1"
   },
   "devDependencies": {
+    "jsdom": "^30.0.1",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },

@@ -35,6 +35,10 @@ Code rows are colored by a bundled highlight.js (the same language set the Solut
 
 [dsh-stylevault](https://github.com/GptsApp/dsh-stylevault) compatible: its Colors panel overrides exactly those `--shiki-token-*` variables, so restyling your theme there restyles the diff cards too.
 
+## Fold long hunks
+
+Cards stay fully expanded by default. Turn on *Fold long hunks* under **Settings → Plugins → Inline diff** and a stepper appears for the visible rows per end (default 8): a hunk spanning more than two visible ends plus four extra rows shows its first and last rows with the middle behind a bar; click the bar (or focus it and press Enter) to reveal the hidden rows, and click the bar that replaces it to fold them away again. Like the other choices, this is saved and survives restarts.
+
 ## Wallpaper glass
 
 With [dsh-wallpaper-engine](https://github.com/elysia395/dsh-wallpaper-engine) installed and a wallpaper live, diff cards adopt its liquid-glass look: a translucent surface, a frosted blur of the wallpaper behind them, and the same specular sheen the composer and message bubbles use. Blur strength and transparency follow wallpaper-engine's own glass sliders. Prefer the stock opaque cards? Pick *Off* under **Settings → Plugins → Inline diff → Wallpaper glass**. Like the other choices, this is saved and survives restarts.

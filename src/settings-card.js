@@ -31,6 +31,8 @@
 			const setSyntax = props && props.setSyntax;
 			const setNumbers = props && props.setNumbers;
 			const setWallpaper = props && props.setWallpaper;
+			const setFold = props && props.setFold;
+			const setFoldLines = props && props.setFoldLines;
 			const [words, setWords] = react.useState(getWordsMode());
 			react.useEffect(() => onWordsMode(setWords), []);
 			const [keepIndent, setKeepIndent] = react.useState(getKeepIndent());
@@ -41,6 +43,29 @@
 			react.useEffect(() => onNumbersOn(setNumbersOn), []);
 			const [wallpaperGlass, setWallpaperGlass] = react.useState(getWallpaperGlass());
 			react.useEffect(() => onWallpaperGlass(setWallpaperGlass), []);
+			const [foldRows, setFoldRows] = react.useState(getFoldRows());
+			react.useEffect(() => onFoldRows(setFoldRows), []);
+			const [foldKeep, setFoldKeepEcho] = react.useState(getFoldKeep());
+			react.useEffect(() => onFoldKeep(setFoldKeepEcho), []);
+			// The stepper holds a local draft while focused and commits once on
+			// blur (or Enter): per-keystroke writes would durably store every
+			// intermediate value ("1" of "12") and out-of-range raw text. The
+			// committed value is clamped, matching the client-side clamp.
+			const [foldDraft, setFoldDraft] = react.useState(null);
+			// An adoption-driven unmount (fold switching off) skips blur; drop
+			// the draft so a remounted stepper starts from the stored value.
+			react.useEffect(() => {
+				if (!foldRows) setFoldDraft(null);
+			}, [foldRows]);
+			const commitFoldDraft = () => {
+				if (foldDraft === null) return;
+				const raw = Number.parseInt(foldDraft, 10);
+				setFoldDraft(null);
+				if (!Number.isNaN(raw)) {
+					const clamped = Math.min(FOLD_LINES_MAX, Math.max(FOLD_LINES_MIN, raw));
+					if (clamped !== foldKeep) chooseFoldLines(clamped);
+				}
+			};
 			const [settings, setSettings] = react.useState(getSettingsState());
 			react.useEffect(() => onSettingsState(setSettings), []);
 			// Re-render on GUI-language switches; copy resolves through tr().
@@ -53,12 +78,15 @@
 			const writable = settings.writable
 				&& typeof setHighlight === "function" && typeof setIndent === "function"
 				&& typeof setSyntax === "function" && typeof setNumbers === "function"
-				&& typeof setWallpaper === "function";
+				&& typeof setWallpaper === "function" && typeof setFold === "function"
+				&& typeof setFoldLines === "function";
 			const choose = writable ? setHighlight : () => {};
 			const chooseIndent = writable ? setIndent : () => {};
 			const chooseSyntax = writable ? setSyntax : () => {};
 			const chooseNumbers = writable ? setNumbers : () => {};
 			const chooseWallpaper = writable ? setWallpaper : () => {};
+			const chooseFold = writable ? setFold : () => {};
+			const chooseFoldLines = writable ? setFoldLines : () => {};
 			return react.createElement("li", { className: "did-card" + (open ? " did-cardopen" : "") },
 				react.createElement("button", {
 					type: "button",
@@ -107,7 +135,35 @@
 							segmentButton(WALLPAPER_ON, tr("wallpaper.on"), wallpaperGlass, chooseWallpaper, !writable),
 							segmentButton(WALLPAPER_OFF, tr("wallpaper.off"), !wallpaperGlass, chooseWallpaper, !writable)
 						)
-					)
+					),
+					react.createElement("div", { className: "did-setting" },
+						react.createElement("span", { className: "did-setting-title" }, tr("fold.title")),
+						react.createElement("div", { className: "did-seg", role: "group", "aria-label": tr("fold.title") },
+							segmentButton(FOLD_ON, tr("fold.on"), foldRows, chooseFold, !writable),
+							segmentButton(FOLD_OFF, tr("fold.off"), !foldRows, chooseFold, !writable)
+						)
+					),
+					foldRows ? react.createElement("div", { className: "did-setting" },
+						react.createElement("label", { className: "did-setting-title", htmlFor: "did-fold-lines" },
+							tr("fold.threshold")),
+						react.createElement("input", {
+							id: "did-fold-lines",
+							type: "number",
+							className: "did-numinput",
+							min: FOLD_LINES_MIN,
+							max: FOLD_LINES_MAX,
+							value: foldDraft !== null ? foldDraft : String(foldKeep),
+							disabled: !writable,
+							onChange: (event) => setFoldDraft(event.target.value),
+							onBlur: commitFoldDraft,
+							onKeyDown: (event) => {
+								if (event.key === "Enter") {
+									commitFoldDraft();
+									event.target.blur();
+								}
+							}
+						})
+					) : null
 				) : null
 			);
 		}

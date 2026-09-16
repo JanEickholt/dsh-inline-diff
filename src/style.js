@@ -265,8 +265,10 @@ button.did-path:hover {
 }
 
 /* Numbers off: drop the gutter entirely — code text starts at the plain
-   inset, like the right padding, and no number spans render at all. */
+   inset, like the right padding, and no number spans render at all. The fold
+   band follows it instead of keeping the gutter indent. */
 .did-nonumbers .did-code { padding-left: 8px; }
+.did-nonumbers .did-fold { padding-left: 8px; }
 
 /* Changed rows carry a 3px colored edge on their pane's outer side. */
 .did-delbg { background: var(--did-del-row); box-shadow: inset 3px 0 0 var(--did-del-stat); }
@@ -281,6 +283,64 @@ button.did-path:hover {
 	font-size: 11px;
 	border-top: 1px solid var(--did-sep);
 }
+
+/* Fold band: sits between cell rows in both columns, aligned with the code
+   inset so it reads as part of the grid, not a control. Hover pairs tint the
+   row, so the band gets the shared wash. No data-ri: excluded from pairing
+   and height sync by design. */
+.did-fold {
+	padding: 2px 8px 2px calc(4px + var(--did-num-w, 4ch) + 16px);
+	color: var(--did-text-muted);
+	font-size: 11px;
+	cursor: pointer;
+	user-select: none;
+	background: var(--did-empty-bg);
+}
+.did-fold:hover, .did-fold:focus-visible {
+	background: var(--did-hover-bg);
+	color: var(--did-text-secondary);
+	outline: none;
+}
+
+/* Chevron marks the bar as a control; it points at the hidden block and
+   turns with the toggle, eased by the shared transition. */
+.did-fold-chevron {
+	display: inline-block;
+	margin-right: 4px;
+	transition: transform 120ms ease;
+}
+.did-fold-chevronopen {
+	transform: rotate(90deg);
+}
+
+/* Collapse preview: hovering the open bar washes the collapsible range in
+   BOTH columns (each .did-file is one hunk, so scoping by file covers the
+   mirrored range no matter which side's bar is hovered). Keys on the flat
+   .did-foldopen class — Chromium does not match :hover inside a nested
+   :has(). Pure :hover — the wash can never outlive the pointer. */
+.did-file:has(.did-foldopen:hover) .did-foldrange > .did-code:not(.did-delbg):not(.did-insbg):not(.did-void) {
+	background: var(--did-hover-bg);
+}
+.did-file:has(.did-foldopen:hover) .did-foldrange > .did-delbg {
+	background: var(--did-del-hover);
+}
+.did-file:has(.did-foldopen:hover) .did-foldrange > .did-insbg {
+	background: var(--did-add-hover);
+}
+
+/* Fold threshold stepper: a small native number box next to its label. */
+.did-numinput {
+	width: 5.5em;
+	background: none;
+	border: 1px solid var(--did-border);
+	border-radius: 4px;
+	color: var(--did-text);
+	font: inherit;
+	font-size: 12px;
+	padding: 3px 6px;
+	color-scheme: inherit;
+}
+.did-numinput:disabled { color: var(--did-text-muted); }
 
 /* Plugins-page card: remap its surfaces to the page's bg-layer ladder, which
    native settings cards here render with, so it matches siblings under the

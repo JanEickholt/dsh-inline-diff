@@ -19,6 +19,13 @@
 		const WALLPAPER_FIELD = "wallpaper";
 		const WALLPAPER_ON = "on";
 		const WALLPAPER_OFF = "off";
+		const FOLD_FIELD = "fold";
+		const FOLD_ON = "on";
+		const FOLD_OFF = "off";
+		const FOLD_LINES_FIELD = "foldLines";
+		const FOLD_LINES_DEFAULT = 8;
+		const FOLD_LINES_MIN = 1;
+		const FOLD_LINES_MAX = 100;
 
 		let wordsMode = true;
 		const wordsListeners = new Set();
@@ -115,6 +122,57 @@
 		function onWallpaperGlass(listener) {
 			wallpaperGlassListeners.add(listener);
 			return () => { wallpaperGlassListeners.delete(listener); };
+		}
+
+		// Durable `inline-diff.fold` ("on" | "off"); off by default — the
+		// plugin's pitch is the always-expanded card, folding long hunks
+		// (first/last rows visible, middle behind a bar) is opt-in. Unknown
+		// sections (host without the field) leave it off.
+		let foldRowsMode = false;
+		const foldRowsListeners = new Set();
+
+		function getFoldRows() {
+			return foldRowsMode;
+		}
+
+		function setFoldRows(enabled) {
+			if (foldRowsMode === enabled) return;
+			foldRowsMode = enabled;
+			for (const listener of [...foldRowsListeners]) listener(enabled);
+		}
+
+		function onFoldRows(listener) {
+			foldRowsListeners.add(listener);
+			return () => { foldRowsListeners.delete(listener); };
+		}
+
+		// Durable `inline-diff.foldLines` (number, 1..100, default 8): visible
+		// rows per end of a folded hunk. The wire envelope passes missing,
+		// fractional and out-of-range values through (schemastery does not
+		// clamp), so every read normalizes instead of trusting it.
+		let foldKeepRows = FOLD_LINES_DEFAULT;
+		const foldKeepListeners = new Set();
+
+		function clampFoldLines(value) {
+			return Number.isFinite(value)
+				? Math.min(FOLD_LINES_MAX, Math.max(FOLD_LINES_MIN, Math.round(value)))
+				: FOLD_LINES_DEFAULT;
+		}
+
+		function getFoldKeep() {
+			return foldKeepRows;
+		}
+
+		function setFoldKeep(keep) {
+			const next = clampFoldLines(keep);
+			if (foldKeepRows === next) return;
+			foldKeepRows = next;
+			for (const listener of [...foldKeepListeners]) listener(next);
+		}
+
+		function onFoldKeep(listener) {
+			foldKeepListeners.add(listener);
+			return () => { foldKeepListeners.delete(listener); };
 		}
 
 		// Whether the Host serves the namespace (a card must leave no trace

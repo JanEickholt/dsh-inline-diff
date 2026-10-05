@@ -461,17 +461,24 @@ button.did-path:hover {
 	font-size: 13px;
 }
 
+/* Segmented control: platform selection language — the selected segment
+   carries the business accent as its text color plus 600 weight, no
+   backdrop box (the aria-pressed=true actionButton idiom). Unselected
+   segments stay secondary; hover stays interactive-bg-hover. */
 .did-seg {
 	display: flex;
-	border: 1px solid var(--did-border);
-	border-radius: 6px;
-	overflow: hidden;
+	border: 0;
+	border-radius: var(--dsw-radius-md, 6px);
+	background: transparent;
+	padding: 0;
+	gap: 2px;
 }
 
 .did-seg button {
 	appearance: none;
 	border: 0;
-	background: none;
+	border-radius: var(--dsw-radius-sm, 4px);
+	background: transparent;
 	color: var(--did-text-secondary);
 	font: inherit;
 	font-size: 12px;
@@ -479,20 +486,44 @@ button.did-path:hover {
 	padding: 4px 10px;
 	cursor: pointer;
 	white-space: nowrap;
-}
-
-.did-seg button + button {
-	border-left: 1px solid var(--did-border);
+	transition: background 180ms ease, color 180ms ease;
 }
 
 .did-seg button:hover {
 	background: var(--did-hover-bg);
+	color: var(--did-text);
 }
 
 .did-seg button[aria-pressed="true"] {
-	background: var(--did-hover-bg);
-	color: var(--did-text);
+	background: transparent;
+	color: var(--dsw-alias-state-business-primary, #4176e6);
 	font-weight: 600;
+}
+
+.did-seg button:focus-visible {
+	outline: 1px solid var(--dsw-focus-ring-color, var(--dsw-alias-state-business-primary, #4176e6));
+	outline-offset: 0;
+}
+
+.did-seg button:disabled {
+	cursor: default;
+	opacity: 0.4;
+}
+
+/* Plugins-page seat (0.2.x plugins.bundle.config): the manager's section
+   owns the chrome, so the rows render flat — no card shell, no background,
+   always extended (the shape dsh-context's lc-settings-prefs takes).
+   The rows only inherit the --did-* tokens under .did-root/.did-card, so
+   the seat re-exposes the label aliases directly: without them every
+   var(--did-text-*) is invalid-at-computed-value-time and falls back to the
+   inherited near-white primary, losing the secondary/muted hierarchy. */
+.did-prefs {
+	--did-text: var(--dsw-alias-label-primary, #f9fafb);
+	--did-text-secondary: var(--dsw-alias-label-secondary, #cfd3d6);
+	--did-text-muted: var(--dsw-alias-label-tertiary, #adb2b8);
+	--did-hover-bg: var(--dsw-alias-interactive-bg-hover, rgba(255, 255, 255, 0.08));
+	--did-border: var(--dsw-alias-border-l2, rgba(255, 255, 255, 0.12));
+	padding: 4px 0;
 }
 
 /* Syntax token classes -> the --did-syn-* palette above. Same class groups

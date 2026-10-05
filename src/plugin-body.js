@@ -111,14 +111,11 @@
 	 * ride the seat's `inject` face.
 	 */
 	// The bundle detail page renders the config entry bare inside a plain
-	// section, so the card's own <li> rides a list wrapper there (the same
-	// shape dsh-client-auto-continue's page component uses).
+	// section, so the rows render flat and always extended there — no card
+	// shell, no background (the shape dsh-context's Plugins-page card
+	// takes: the section owns the chrome).
 	function DiffHighlightPage(props) {
-		return react.createElement(
-			"ul",
-			{ className: "did-page", style: { listStyle: "none", margin: 0, padding: 0 } },
-			react.createElement(DiffHighlightCard, props),
-		);
+		return react.createElement(DiffHighlightPrefs, props);
 	}
 
 	function registerSettingsCard(ctx, setters) {

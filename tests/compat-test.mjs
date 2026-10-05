@@ -267,13 +267,14 @@ const slotsFor = (registrations, name) =>
 	check(slotsFor(host.registrations, "plugins.bundle.config").length === 2,
 		"0.2.0 host: every declaration epoch re-registers the config entry");
 
-	// The page component wraps the card's <li> in a list and renders it
-	// through the injected setters face (the owner props the plugin manager
-	// adds — view/form — must pass through harmlessly).
+	// The page component renders the preference rows flat — always
+	// extended, no card shell — through the injected setters face (the
+	// owner props the plugin manager adds — view/form — pass through
+	// harmlessly).
 	const page = registrations.find((row) => row.meta.name === "plugins.bundle.config").component;
 	const pageHtml = renderToString(React.createElement(page, { ...configs[0].inject(), view: "page" }));
-	check(/Syntax, diff highlighting/.test(pageHtml) && /<ul/.test(pageHtml),
-		"0.2.0 host: the config page renders through the injected setters");
+	check(/Diff highlighting/.test(pageHtml) && /did-prefs/.test(pageHtml) && !/did-cardhead/.test(pageHtml),
+		"0.2.0 host: the config page renders flat prefs through the injected setters");
 
 	configs[0].inject().setFold("on");
 	await new Promise((resolve) => setTimeout(resolve, 0));

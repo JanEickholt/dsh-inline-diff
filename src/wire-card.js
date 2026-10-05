@@ -27,6 +27,10 @@
 		// runtime recorded no applied diffs for.
 		function intendedDiffFromCall(call, name) {
 			if (call == null || typeof call !== "object") return null;
+			// DSH 0.1.7 added a `preparing` call phase whose block deliberately
+			// carries no arguments yet; JSON.parse(undefined) would throw and
+			// hide the real reason, so the phase is refused by name.
+			if (typeof call.argsRaw !== "string") return null;
 			let args;
 			try {
 				args = JSON.parse(call.argsRaw);

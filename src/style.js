@@ -285,20 +285,23 @@ button.did-path:hover {
 }
 
 /* Fold band: sits between cell rows in both columns, aligned with the code
-   inset so it reads as part of the grid, not a control. Hover pairs tint the
-   row, so the band gets the shared wash. No data-ri: excluded from pairing
-   and height sync by design. */
+   inset. One shade above the grid with a hairline seam top and bottom so the
+   band stays findable inside big hunks — with the void tint it vanished
+   between red/green rows. The seam mixes from the tertiary label alias
+   because --did-sep is transparent in the base theme. No data-ri: excluded
+   from pairing and height sync by design. */
 .did-fold {
 	padding: 2px 8px 2px calc(4px + var(--did-num-w, 4ch) + 16px);
-	color: var(--did-text-muted);
+	color: var(--did-text-secondary);
 	font-size: 11px;
 	cursor: pointer;
 	user-select: none;
-	background: var(--did-empty-bg);
+	background: var(--did-hover-bg);
+	border-block: 1px solid color-mix(in srgb, var(--dsw-alias-label-tertiary, #8b8f94) 25%, transparent);
 }
 .did-fold:hover, .did-fold:focus-visible {
-	background: var(--did-hover-bg);
-	color: var(--did-text-secondary);
+	background: color-mix(in srgb, var(--dsw-alias-label-primary, #808080) 16%, transparent);
+	color: var(--did-text);
 	outline: none;
 }
 

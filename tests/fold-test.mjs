@@ -38,18 +38,22 @@ function loadPlugin(section) {
 	const cards = [];
 	plugin.apply({
 		effect(fn) { fn(); },
-		inject() {},
+		// cordis-like runtime inject: fire only when every requested
+		// service is present (locale stays absent).
+		inject(names, fn) { if (names.every((name) => this[name] !== undefined)) fn(this); },
 		slots: {
 			inject(name, fn) {
 				const result = fn();
 				for (const component of Array.isArray(result) || result?.[Symbol.iterator] ? result : [result]) {
-					if (typeof component === "function") {
-						if (name === "settings.plugin.item") cards.push(component);
-						else toolview.push(component);
-					}
+					if (typeof component === "function") toolview.push(component);
 				}
 			},
-			register: (_meta, component) => component,
+			// The settings card registers directly into its seat, not through
+			// the injection seam the tool-call rows use.
+			register: (meta, component) => {
+				if (meta.name !== "tool.call.toolview") cards.push(component);
+				return component;
+			},
 		},
 		settingsScope: {
 			bind: () => ({

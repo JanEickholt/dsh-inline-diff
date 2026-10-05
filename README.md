@@ -55,6 +55,10 @@ The same compact edit under a custom theme — [dsh-stylevault](https://github.c
 
 The settings card comes with English and Simplified Chinese text. It follows the GUI language picked under **Settings → General → Language**; when nothing is stored it follows your browser. A missing translation falls back to English.
 
+## Harness compatibility
+
+Works on DSH `0.1.5`, `0.1.7` and `0.2.0` — one build, no client upgrade needed. The plugin detects the host at load and takes the matching branch: `0.1.7` renamed the client settings transport, moved the Plugins-settings card onto a different slot, and moved the Host's namespace registration onto the plugin's own `Config` export. Everything else the plugin touches (the module loader, the tool-call view slot, the fenced read route, the diff anchor) is unchanged across all three lines. See [`docs/compat.md`](docs/compat.md) for the full contract diff.
+
 ## Install
 
 **With the `dsh` CLI** (easiest):

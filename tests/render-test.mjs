@@ -27,12 +27,17 @@ const plugin = factory(requireStub);
 
 const effects = [];
 const registrars = {};
+const cards = [];
 const fakeCtx = {
 	effect(fn) { const d = fn(); effects.push(d); return d; },
-	inject() {}, // optional services (locale) — browser seed stands
+	// cordis-like runtime inject: fire only when every requested service
+	// is present (locale stays absent, so the browser seed stands).
+	inject(names, fn) { if (names.every((name) => this[name] !== undefined)) fn(this); },
 	slots: {
 		inject(name, fn) { (registrars[name] ??= []).push(fn); },
-		register(_meta, component) { return component; },
+		// The settings card registers directly into its seat; only the
+		// tool-call rows go through the injection seam.
+		register(meta, component) { if (meta.name !== "tool.call.toolview") cards.push(component); return component; },
 	},
 	settingsScope: {
 		bind() {
@@ -367,7 +372,7 @@ for (const [name, ok] of writeChecks) {
 }
 
 // Settings card smoke: renders its header with the updated description.
-const DiffHighlightCard = collect("settings.plugin.item")[0];
+const DiffHighlightCard = cards[0];
 if (typeof DiffHighlightCard !== "function") throw new Error("card component not resolved");
 const cardHtml = renderToString(React.createElement(DiffHighlightCard, {}));
 console.log((/Syntax, diff highlighting/.test(cardHtml) ? "PASS" : "FAIL") + " card description");

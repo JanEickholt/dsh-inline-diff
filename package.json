@@ -43,7 +43,7 @@
   ],
   "scripts": {
     "build": "node tools/build-client.mjs",
-    "test": "node tools/build-client.mjs && node tests/render-test.mjs && node tests/fold-test.mjs && node tests/host-anchor-test.mjs"
+    "test": "node tools/build-client.mjs && node tests/render-test.mjs && node tests/fold-test.mjs && node tests/host-anchor-test.mjs && node tests/compat-test.mjs"
   },
   "repository": {
     "type": "git",
@@ -54,7 +54,7 @@
     "url": "https://github.com/JanEickholt/dsh-inline-diff/issues"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh-settings": ">=0.1.1-rc.2 <0.2.0-0",
+    "@deepseek-ai/dsh-settings": ">=0.1.1-rc.2 <0.3.0-0",
     "@deepseek-ai/schemastery": "^3.18.1"
   },
   "devDependencies": {

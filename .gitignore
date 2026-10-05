@@ -3,3 +3,6 @@ node_modules/
 pnpm-lock.yaml
 debug/
 .slim/deepwork/
+# A global ignore drops every *.md; these two are part of the published docs.
+!README.md
+!docs/compat.md

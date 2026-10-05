@@ -381,4 +381,70 @@ if (!/Syntax, diff highlighting/.test(cardHtml)) failed++;
 const cardOpenHtml = renderToString(React.createElement(DiffHighlightCard, { open: true }));
 console.log((/Wallpaper glass/.test(cardOpenHtml) ? "PASS" : "FAIL") + " card wallpaper row");
 if (!/Wallpaper glass/.test(cardOpenHtml)) failed++;
+
+// ---- Client render: one call's live lifecycle (jsdom) ----
+// A 0.2.x row mounts at the preparing phase (block without arguments), then
+// the SAME component instance re-renders dispatched and settled. A useState
+// reached only past the hunks===null stub return changes the hook count
+// between those renders; React throws "rendered more hooks than during the
+// previous render", the slot registry abdicates the entry, and every later
+// edit/write in the session falls back to the stock row. The regression:
+// the three phases must render on one instance without any hook error.
+try {
+	const { JSDOM } = await import("jsdom");
+	const dom = new JSDOM("<!doctype html><html><body><div id=root></div></body></html>");
+	globalThis.document = dom.window.document;
+	globalThis.window = dom.window;
+	Object.defineProperty(globalThis, "navigator", { value: dom.window.navigator, configurable: true });
+	const { createRoot } = await import("react-dom/client");
+	const { flushSync } = await import("react-dom");
+
+	const errors = [];
+	const origError = console.error;
+	console.error = (...args) => { errors.push(String(args[0])); };
+
+	const callArgs = { file_path: "src/a.ts", old_string: "a\nb\n", new_string: "a\nc\n" };
+	const preparingBlock = { phase: "preparing", callId: "call-1", name: "edit", turn: 1, step: 1, time: 1, subCalls: [] };
+	const startedBlock = { phase: "start", callId: "call-1", name: "edit", argsRaw: JSON.stringify(callArgs), turn: 1, step: 1, time: 2, subCalls: [] };
+	const settledBlock = {
+		kind: "tool-result", seq: 3, time: 3, callId: "call-1", name: "edit",
+		call: { name: "edit", argsRaw: JSON.stringify(callArgs) },
+		content: [], isError: false,
+		meta: { diffs: [{ path: "src/a.ts", oldText: "a\nb\n", newText: "a\nc\n", oldStart: 10, newStart: 10 }] },
+		subCalls: [],
+	};
+	const root = createRoot(document.getElementById("root"));
+	flushSync(() => { root.render(React.createElement(InlineDiffRow, { block: preparingBlock, toolName: "edit", cwd: "/w", home: "/h" })); });
+	const stubShown = document.querySelector(".did-root .did-filepath")?.textContent === "…";
+	console.log((stubShown ? "PASS" : "FAIL") + " preparing block renders the stub header");
+	if (!stubShown) failed++;
+
+	// The dispatch re-render on the same instance is the exact transition that
+	// used to throw the hook-count invariant.
+	flushSync(() => { root.render(React.createElement(InlineDiffRow, { block: startedBlock, toolName: "edit", cwd: "/w", home: "/h" })); });
+	const dispatchedGrid = document.querySelector(".did-grid") !== null;
+	console.log((dispatchedGrid ? "PASS" : "FAIL") + " dispatched block renders the diff grid");
+	if (!dispatchedGrid) failed++;
+
+	flushSync(() => { root.render(React.createElement(InlineDiffRow, { block: settledBlock, toolName: "edit", cwd: "/w", home: "/h" })); });
+	const settledOk = document.querySelector(".did-grid") !== null
+		&& document.body.textContent.includes("src/a.ts")
+		&& document.body.textContent.includes("10");
+	console.log((settledOk ? "PASS" : "FAIL") + " settled block renders applied hunks");
+	if (!settledOk) failed++;
+
+	const hookErrors = errors.filter((e) => e.includes("more hooks") || e.includes("fewer hooks"));
+	console.log((hookErrors.length === 0 ? "PASS" : "FAIL") + " no hook-count errors across the lifecycle (got " + hookErrors.length + ")");
+	if (hookErrors.length > 0) { console.log("  " + hookErrors[0]); failed++; }
+
+	console.error = origError;
+	root.unmount();
+} catch (err) {
+	if (err?.code === "ERR_MODULE_NOT_FOUND") {
+		console.log("SKIP client lifecycle: jsdom not installed");
+	} else {
+		console.log("FAIL client lifecycle threw: " + (err?.stack ?? err));
+		failed++;
+	}
+}
 process.exit(failed === 0 ? 0 : 1);

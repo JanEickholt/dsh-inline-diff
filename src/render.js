@@ -208,9 +208,13 @@
 
 			// Row hover: mark the data-ri pair under the cursor. Delegated so
 			// it costs two listeners per card instead of two per cell.
-			const rootRefForHover = rootRef;
+			// mouseover fires on every syntax-token span the pointer crosses,
+			// so the current pair is remembered and re-marking it is skipped
+			// while the cell still carries the mark (a re-render may drop it).
+			const hoveredRi = react.useRef(null);
 			const clearHover = () => {
-				const rootEl = rootRefForHover.current;
+				hoveredRi.current = null;
+				const rootEl = rootRef.current;
 				if (!rootEl) return;
 				for (const el of rootEl.querySelectorAll(".did-hoverrow")) {
 					el.classList.remove("did-hoverrow");
@@ -220,14 +224,21 @@
 				const target = event.target;
 				const hit = target && target.closest ? target.closest(".did-code") : null;
 				const ri = hit && hit.dataset ? hit.dataset.ri : null;
+				if (ri && ri === hoveredRi.current && hit.classList.contains("did-hoverrow")) return;
 				clearHover();
 				if (!ri) return;
-				const rootEl = rootRefForHover.current;
+				const rootEl = rootRef.current;
 				if (!rootEl) return;
+				hoveredRi.current = ri;
 				for (const el of rootEl.querySelectorAll('[data-ri="' + ri + '"]')) {
 					el.classList.add("did-hoverrow");
 				}
 			};
+
+			// A failed card starts collapsed: the error result below the card
+			// explains the failure, so the attempted diff is opt-in detail.
+			const failed = !!(block && block.isError);
+			const [attemptOpen, setAttemptOpen] = react.useState(false);
 
 			// Wrapped lines make the two columns grow independently; pair the
 			// data-ri cells' heights so counterpart rows stay level. Layout
@@ -236,7 +247,11 @@
 			// move scrollTop above the viewport, which the conversation
 			// scroller misreads as a reader scroll and latches autoscroll off
 			// once the drift passes its 25px at-bottom threshold — large diffs
-			// drift farthest, so they kill follow-scroll first.
+			// drift farthest, so they kill follow-scroll first. Every input
+			// that changes the rendered cells or their width (gutter lane,
+			// folded ranges, a failed card opening) is a dependency: a stale
+			// min-height never shrinks on its own, and the root observer
+			// stays silent while the card's own height holds.
 			react.useLayoutEffect(() => {
 				const rootEl = rootRef.current;
 				if (!rootEl) return;
@@ -251,23 +266,28 @@
 					// viewport, so only they trip it). Holding the card's current
 					// height across the measure keeps scrollHeight stable, so the
 					// clamp never fires.
+					//
+					// Three phases (clear, read, write) so a sync forces a fixed
+					// number of layouts: interleaving each pair's offsetHeight
+					// read with the previous pair's min-height write re-laid
+					// out the whole card once per row.
 					rootEl.style.minHeight = rootEl.offsetHeight + "px";
-					for (const grid of rootEl.querySelectorAll(".did-grid")) {
-						const pairs = new Map();
-						for (const cellEl of grid.querySelectorAll("[data-ri]")) {
-							cellEl.style.minHeight = "";
-							const ri = cellEl.dataset.ri;
-							const slot = pairs.get(ri);
-							if (slot) slot.push(cellEl);
-							else pairs.set(ri, [cellEl]);
-						}
-						for (const pairCells of pairs.values()) {
-							if (pairCells.length < 2) continue;
-							const height = Math.max(pairCells[0].offsetHeight, pairCells[1].offsetHeight);
-							if (height > 0) {
-								for (const cellEl of pairCells) cellEl.style.minHeight = height + "px";
-							}
-						}
+					const pairs = new Map();
+					for (const cellEl of rootEl.querySelectorAll(".did-grid [data-ri]")) {
+						cellEl.style.minHeight = "";
+						const ri = cellEl.dataset.ri;
+						const slot = pairs.get(ri);
+						if (slot) slot.push(cellEl);
+						else pairs.set(ri, [cellEl]);
+					}
+					const heights = [];
+					for (const pairCells of pairs.values()) {
+						if (pairCells.length < 2) continue;
+						const height = Math.max(pairCells[0].offsetHeight, pairCells[1].offsetHeight);
+						if (height > 0) heights.push([pairCells, height + "px"]);
+					}
+					for (const [pairCells, minHeight] of heights) {
+						for (const cellEl of pairCells) cellEl.style.minHeight = minHeight;
 					}
 					rootEl.style.minHeight = "";
 				};
@@ -276,7 +296,7 @@
 				const observer = new ResizeObserver(sync);
 				observer.observe(rootEl);
 				return () => observer.disconnect();
-			}, [hunks, keepIndent, words, syntaxOn]);
+			}, [hunks, keepIndent, words, syntaxOn, numbersOn, foldRows, foldKeep, expandedFolds, attemptOpen]);
 
 			// Selection is native browser behavior: each pane is one contiguous
 			// column of DOM, so a vertical drag confined to a column stays
@@ -284,10 +304,6 @@
 			// in-between DOM too — accepted trade-off for keeping selection
 			// fully native (copy, double-click, shift-click all just work).
 
-			// A failed card starts collapsed: the error result below the card
-			// explains the failure, so the attempted diff is opt-in detail.
-			const failed = !!(block && block.isError);
-			const [attemptOpen, setAttemptOpen] = react.useState(false);
 			const perHunk = react.useMemo(
 				() => hunks === null ? [] : hunks.map((hunk) => computeHunkRows(hunk, keepIndent)),
 				[hunks, keepIndent]);
@@ -296,10 +312,12 @@
 			// read per distinct path, then a verbatim locate of each hunk. A
 			// failed read/locate leaves that hunk's gutter blank. Keyed so a
 			// settled block replacing the running one cannot reuse stale values.
-			const hunkKey = hunks === null ? "" : hunks.map((hunk) =>
+			// The key hashes the full texts: a 32-char prefix let two edits
+			// that differ only past it (same lengths) share cached bases.
+			const hunkKey = react.useMemo(() => hunks === null ? "" : hunks.map((hunk) =>
 				hunk.path + "#" + (hunk.oldStart ?? "?") + ":" + (hunk.newStart ?? "?")
 				+ ":" + hunk.oldText.length + ":" + hunk.newText.length
-				+ ":" + hunk.newText.slice(0, 32)).join("|");
+				+ ":" + hashText(hunk.newText, hashText(hunk.oldText)).toString(36)).join("|"), [hunks]);
 			// Settled hunks only, cached module-wide. A running call re-renders
 			// every stream tick, and per-tick locate work there means an extra
 			// post-paint commit during autoscroll — the exact churn that latches
@@ -379,8 +397,14 @@
 			// Per-hunk bases first: the gutter box must fit the LARGEST number
 			// the card actually renders, so 5-digit files get a 5ch lane
 			// instead of digits spilling toward the code.
+			// The module cache answers when this instance's state was located
+			// for another key: an instance re-rendered onto an already-located
+			// hunk set skips the effect, so its state alone would never catch up.
+			const locatedValues = located !== null && located.key === hunkKey
+				? located.values
+				: baseCache.get(hunkKey)?.values ?? null;
 			const hunkBases = hunks.map((hunk, hunkIndex) => {
-				const locatedHunk = located !== null && located.key === hunkKey ? located.values[hunkIndex] : null;
+				const locatedHunk = locatedValues !== null ? locatedValues[hunkIndex] : null;
 				return {
 					oldBase: hunk.oldStart !== undefined ? hunk.oldStart
 						: locatedHunk !== null ? locatedHunk.oldBase : null,

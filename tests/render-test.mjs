@@ -365,7 +365,69 @@ const writeHtml = renderToString(React.createElement(InlineDiffRow, {
 const writeChecks = [
 	["created write renders whole-file card", /did-grid/.test(writeHtml)],
 	["created write is all added", /did-insbg/.test(writeHtml) && !/did-delbg/.test(writeHtml)],
+	// The content's trailing newline ends line 2; it does not open a
+	// phantom third line that inflates the badge and adds a blank row.
+	["newline-terminated write counts its real lines", writeHtml.includes('did-addnum">+2') && !writeHtml.includes('did-addnum">+3')],
+	["newline-terminated write renders no phantom row", (writeHtml.match(/class="did-code did-insbg/g) ?? []).length === 2],
 ];
+
+// Unicode word chips: a word with non-ASCII letters chips as one word,
+// and an emoji is one token, so a chip can never split its surrogate pair.
+const unicodeHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: {
+		kind: "edit",
+		resultView: {
+			card: "diff",
+			diffs: [{
+				path: "notes.txt",
+				oldText: "size = größe; mood = \u{1F600};\n",
+				newText: "size = grösse; mood = \u{1F603};\n",
+			}],
+		},
+	},
+	toolName: "edit", cwd: "/w", home: "/h",
+}));
+writeChecks.push(
+	["non-ASCII word chips whole", /did-insword[^>]*>grösse</.test(unicodeHtml)],
+	["emoji chips whole", /did-insword[^>]*>\u{1F603}</u.test(unicodeHtml)],
+	["no lone surrogate in the output", !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(unicodeHtml)],
+);
+
+// A cwd with a trailing slash still relativizes the header path.
+const slashBlockHtml = renderToString(React.createElement(InlineDiffRow, {
+	block: { kind: "edit", resultView: { card: "diff", diffs: [{ path: "/w/src/a.ts", oldText: "a\n", newText: "b\n" }] } },
+	toolName: "edit", cwd: "/w/", home: "/h",
+}));
+writeChecks.push(
+	["trailing-slash cwd relativizes the path", slashBlockHtml.includes(">src/a.ts<")],
+);
+
+// A bound form whose snapshot carries no section yet (the host is still
+// loading it) leaves every preference on its default — syntax included.
+{
+	let pendingFactory;
+	new Function("window", "require", source)({ __ModuleLoader__: { load(r) { pendingFactory = r.factory; } } }, requireStub);
+	const pendingRows = [];
+	pendingFactory(requireStub).apply({
+		effect(fn) { return fn(); },
+		inject(names, fn) { if (names.every((name) => this[name] !== undefined)) fn(this); },
+		slots: {
+			inject(name, fn) { if (name === "tool.call.toolview") for (const entry of fn()) pendingRows.push(entry); },
+			register(_meta, component) { return component; },
+		},
+		settingsScope: {
+			bind: () => ({
+				getSnapshot: () => ({ status: "loading", writable: false, value: undefined }),
+				subscribe: () => () => {},
+				set: () => ({ catch() {} }),
+			}),
+		},
+	});
+	const pendingHtml = renderToString(React.createElement(pendingRows[0], {
+		block: unstampedBlock, toolName: "edit", cwd: "/w", home: "/h",
+	}));
+	writeChecks.push(["syntax stays on while the section is unset", /hljs-keyword/.test(pendingHtml)]);
+}
 for (const [name, ok] of writeChecks) {
 	console.log((ok ? "PASS" : "FAIL") + " " + name);
 	if (!ok) failed++;

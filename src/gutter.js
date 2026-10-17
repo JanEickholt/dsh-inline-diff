@@ -48,48 +48,36 @@
 			return { oldBase, newBase };
 		}
 
-		/** LRU content cache: cwd-fenced path → {content, size}; one expanded
-		 *  file ≈ one entry. Staleness needs the server, so a hit still POSTs
-		 *  the read and reuses the cached text only while the served size
-		 *  still matches; a changed file re-caches and re-locates. */
-		const readCache = new Map();
-		const READ_CACHE_CAP = 16;
-
 		/** Read one workspace file through the host half's fenced route; null
-		 *  when the host half is absent, the file is binary/unreadable. */
+		 *  when the host half is absent, the file is binary/unreadable. Not
+		 *  cached: the route always serves the whole text, so a cache saves
+		 *  no transfer, and keying reuse on the served size handed back
+		 *  stale text after a same-size edit ("a = 1" -> "a = 2"). The
+		 *  located bases are cached per hunk set in baseCache instead. */
 		async function readWorkspaceFile(path, cwd) {
-			const key = (cwd ?? "") + "\0" + path;
-			const hit = readCache.get(key);
-			let content = null;
-			let servedSize;
 			try {
 				const res = await fetch("/dsh-inline-diff/api/read", {
 					method: "POST",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({ cwd, path }),
 				});
-				if (res.ok) {
-					const payload = await res.json();
-					if (payload && payload.kind === "text" && typeof payload.content === "string") {
-						content = payload.content;
-						if (typeof payload.size === "number") servedSize = payload.size;
-					}
-				}
+				if (!res.ok) return null;
+				const payload = await res.json();
+				return payload && payload.kind === "text" && typeof payload.content === "string"
+					? payload.content
+					: null;
 			} catch { /* host absent or offline: blank gutters */ }
-			if (content === null) {
-				if (hit !== undefined) readCache.delete(key);
-				return null;
+			return null;
+		}
+
+		/** 32-bit FNV-1a over UTF-16 code units; `seed` chains several texts. */
+		function hashText(text, seed = 0x811c9dc5) {
+			let hash = seed;
+			for (let index = 0; index < text.length; index++) {
+				hash ^= text.charCodeAt(index);
+				hash = Math.imul(hash, 0x01000193);
 			}
-			// Without a served size the entry cannot be revalidated against
-			// staleness; bypass the cache rather than risk stale line numbers.
-			if (servedSize === undefined) return content;
-			if (hit !== undefined && hit.size === servedSize) return hit.content;
-			readCache.set(key, { content, size: servedSize });
-			if (readCache.size > READ_CACHE_CAP) {
-				const oldest = readCache.keys().next();
-				if (!oldest.done) readCache.delete(oldest.value);
-			}
-			return content;
+			return hash >>> 0;
 		}
 
 		/** Resolved gutter bases per hunk set, keyed by the render-side hunkKey.

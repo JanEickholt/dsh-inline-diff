@@ -1,7 +1,11 @@
 		//#region intra-line word diff
 
+		// Unicode-aware: an ASCII \w splits "größe" or 变量 into per-letter
+		// tokens, and without the u flag an emoji splits into its two
+		// surrogate halves, which a chip boundary can then tear apart into
+		// two unrenderable lone surrogates.
 		function tokenize(line) {
-			return line.match(/\w+|\s+|[^\w\s]/g) || [];
+			return line.match(/[\p{L}\p{M}\p{N}_]+|\s+|[^\p{L}\p{M}\p{N}_\s]/gu) || [];
 		}
 
 		// Run-level chip diff: a changed block is diffed as one token stream,

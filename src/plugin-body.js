@@ -84,7 +84,7 @@
 			const section = snapshot.value;
 			setWordsMode(section === undefined || section[HIGHLIGHT_FIELD] !== HIGHLIGHT_LINES);
 			setKeepIndent(section !== undefined && section[INDENT_FIELD] === INDENT_KEEP);
-			setSyntaxOn(section !== undefined && section[SYNTAX_FIELD] !== SYNTAX_OFF);
+			setSyntaxOn(section === undefined || section[SYNTAX_FIELD] !== SYNTAX_OFF);
 			setNumbersOn(section === undefined || section[NUMBERS_FIELD] !== NUMBERS_OFF);
 			setWallpaperGlass(section === undefined || section[WALLPAPER_FIELD] !== WALLPAPER_OFF);
 			setFoldRows(section !== undefined && section[FOLD_FIELD] === FOLD_ON);
@@ -235,7 +235,7 @@
 				if (obs) obs.disconnect();
 				try { docEl.classList.remove("did-we-themed"); } catch { /* head-less */ }
 			};
-	}, "dsh-inline-diff: wallpaper marker");
+		}, "dsh-inline-diff: wallpaper marker");
 
 		// No settings transport at all (a host composing neither service)
 		// still renders diffs; the preferences just stay on their defaults.

@@ -1,7 +1,10 @@
 // Host-half anchor test: drive the presentationMeta wrapper with a settled
 // {before, after} value shaped like the real pipeline's execute outcome, then
 // assert the projected meta hunks carry correct 1-based starts.
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { EventEmitter } from "node:events";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import assert from "node:assert/strict";
 
 // Load the ESM host half without Node's module resolution touching optional
@@ -137,9 +140,90 @@ const scopedMeta = tools.createSuccessResult({}, scopedEdit, { before, after });
 assert.equal(scopedMeta.diffs[0].oldStart, 3, "dispatch gate wraps pre-mounted scopes");
 assert.equal(scopedMeta.diffs[1].newStart, 6, "dispatch gate stamps like the direct path");
 
+// Line-start anchoring: the needle's text also sits at the tail of an
+// earlier, deeper-indented line ("  bravo" ends in "bravo"), where a raw
+// indexOf would hit first and stamp line 1. Hunks are whole lines, so the
+// only true position is line 4.
+const shadowedBefore = ["  bravo", "charlie", "delta", "bravo", "charlie", "delta"].join("\n");
+const shadowedAfter = ["  bravo", "charlie", "delta", "bravo", "charlie", "DELTA"].join("\n");
+const shadowedEdit = {
+	name: "edit",
+	output: {
+		presentationMeta() {
+			return { diffs: [{
+				path: "/w/shadow.txt",
+				oldText: ["bravo", "charlie", "delta"].join("\n"),
+				newText: ["bravo", "charlie", "DELTA"].join("\n"),
+			}] };
+		},
+	},
+};
+const shadowedMeta = tools.createSuccessResult({}, shadowedEdit, { before: shadowedBefore, after: shadowedAfter });
+assert.equal(shadowedMeta.diffs[0].oldStart, 4, "old side anchors on a line start, not a line tail");
+assert.equal(shadowedMeta.diffs[0].newStart, 4, "new side anchors on a line start, not a line tail");
+
+// The wrapper keeps the projector's receiver (the kernel calls it on
+// `output`), and unloading puts back the very function it replaced rather
+// than a copy bound to the definition.
+const receiverOutput = {
+	tag: "output",
+	presentationMeta() { return { diffs: metaDiffs(), receiver: this?.tag }; },
+};
+const bareProjector = receiverOutput.presentationMeta;
+const receiverMeta = tools.createSuccessResult({}, { name: "edit", output: receiverOutput }, { before, after });
+assert.equal(receiverMeta.receiver, "output", "wrapped projector runs on its own receiver");
+assert.equal(receiverMeta.diffs[0].oldStart, 3, "receiver-dependent projector still stamps");
+
 // Unload restores the original projector: fresh projections go out unstamped.
 for (const dispose of disposers) dispose();
 const restored = tools.get("edit").output.presentationMeta({}, { before, after });
 assert.equal(restored.diffs[0].oldStart, undefined, "unload restores the bare projector");
+assert.equal(receiverOutput.presentationMeta, bareProjector, "unload restores the identical function");
 
-console.log("PASS host anchors: starts, shifts, repeated settles, create, restore");
+// --- fenced read route --------------------------------------------------
+// Drive the webServer handler with a fake request: the response must carry
+// the capped head of a large file and the whole text of a small one.
+const routes = [];
+apply({
+	effect(factory) { return factory(); },
+	inject(services, fn) {
+		if (services.length === 1 && services[0] === "webServer") {
+			fn({ webServer: { register(route) { routes.push(route); return () => {}; } } });
+		}
+	},
+});
+assert.equal(routes.length, 1, "the read route registers");
+const workspace = mkdtempSync(join(tmpdir(), "inline-diff-read-"));
+const READ_CAP = 512 * 1024;
+const bigText = "0123456789abcdef\n".repeat(Math.ceil((READ_CAP * 2) / 17));
+writeFileSync(join(workspace, "big.txt"), bigText);
+writeFileSync(join(workspace, "small.txt"), "one\ntwo\n");
+const postRead = (path) => new Promise((resolvePost) => {
+	const req = new EventEmitter();
+	req.url = "/dsh-inline-diff/api/read";
+	req.method = "POST";
+	req.destroy = () => {};
+	const res = {
+		writeHead() {},
+		end(body) { resolvePost(JSON.parse(body)); },
+	};
+	void routes[0].handler(req, res);
+	req.emit("data", Buffer.from(JSON.stringify({ cwd: workspace, path })));
+	req.emit("end");
+});
+try {
+	const big = await postRead("big.txt");
+	assert.equal(big.kind, "text", "large text file reads as text");
+	assert.equal(big.truncated, true, "large file is flagged truncated");
+	assert.equal(big.size, bigText.length, "size reports the whole file");
+	assert.equal(big.content, bigText.slice(0, READ_CAP), "content is exactly the capped head");
+	const small = await postRead("small.txt");
+	assert.equal(small.content, "one\ntwo\n", "small file reads whole");
+	assert.equal(small.truncated, false, "small file is not truncated");
+	const escape = await postRead("../outside.txt");
+	assert.equal(escape.kind, "error", "paths outside the workspace are refused");
+} finally {
+	rmSync(workspace, { recursive: true, force: true });
+}
+
+console.log("PASS host anchors: starts, shifts, repeated settles, create, line starts, receiver, restore, fenced read");

@@ -1,8 +1,16 @@
 		//#region line diff (LCS with size cap)
 		const LINE_DIFF_CAP = 1200;
 
+		// A trailing "\n" terminates the last line rather than opening an
+		// empty one: "a\nb\n" is two lines. Splitting it into a phantom ""
+		// would add a blank row to every newline-terminated hunk, count it
+		// in a write's +N, and make the gutter locate demand a blank file
+		// line right after the hunk.
 		function splitLines(text) {
-			return typeof text === "string" && text !== "" ? text.split("\n") : [];
+			if (typeof text !== "string" || text === "") return [];
+			const lines = text.split("\n");
+			if (lines[lines.length - 1] === "") lines.pop();
+			return lines;
 		}
 
 		// Strip the leading whitespace shared by every non-empty line; deeper

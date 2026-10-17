@@ -96,9 +96,12 @@
 		}
 
 		// Relativize to the session cwd, then to ~ under the host home.
+		// Roots are compared with exactly one trailing slash, so "/w/" or "/"
+		// relativize like "/w" instead of never matching.
 		function relativePath(path, cwd, home) {
-			if (cwd && path.startsWith(cwd + "/")) return path.slice(cwd.length + 1);
-			if (home && path.startsWith(home + "/")) return "~" + path.slice(home.length);
+			const withSlash = (root) => (root.endsWith("/") ? root : root + "/");
+			if (cwd && path.startsWith(withSlash(cwd))) return path.slice(withSlash(cwd).length);
+			if (home && path.startsWith(withSlash(home))) return "~/" + path.slice(withSlash(home).length);
 			return path;
 		}
 		//#endregion

@@ -209,6 +209,7 @@
 		// Pair removed/added runs as "modified" rows by similarity; leftovers
 		// stay one-sided.
 		function buildRows(ops, oldLines, newLines) {
+			const chipsAffordable = hunkChipCells(ops, oldLines, newLines) <= HUNK_CHIP_CELL_CAP;
 			const rows = [];
 			let added = 0;
 			let removed = 0;
@@ -237,11 +238,13 @@
 				// block. Pure runs (one side empty) leave undefined and
 				// oversized runs null — both render with no chips downstream.
 				// Modified rows only exist for mixed runs, where runChips is
-				// always defined-or-null.
+				// always defined-or-null. An over-budget hunk nulls every run.
 				const runChips = removedRun.length > 0 && addedRun.length > 0
-					? runChipSegments(
-						removedRun.map((op) => oldLines[op.oldIndex]),
-						addedRun.map((op) => newLines[op.newIndex]))
+					? (chipsAffordable
+						? runChipSegments(
+							removedRun.map((op) => oldLines[op.oldIndex]),
+							addedRun.map((op) => newLines[op.newIndex]))
+						: null)
 					: undefined;
 				const removedPos = new Map(removedRun.map((op, index) => [op.oldIndex, index]));
 				const addedPos = new Map(addedRun.map((op, index) => [op.newIndex, index]));

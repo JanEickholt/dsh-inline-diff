@@ -17,6 +17,30 @@
 		// a full-line chip on a pure add/remove just doubles the row tint.
 		// Returns per-line segment arrays, or null when the run is too big.
 		const RUN_CHIP_CAP = 1200;
+		// Word chips cost one token-table cell per old x new token pair of
+		// every mixed run, so a hunk rewriting long lines wholesale spends
+		// tens of ms on chips alone. Over this many cells per hunk it keeps
+		// the line-level tint only. Picked from the 8,763 real cards in the
+		// session logs: per-hunk p99 is ~255k cells, and 500k drops chips on
+		// 26 hunks (25 cards) and cuts all chip work by ~30%, all of it from
+		// the slowest cards.
+		const HUNK_CHIP_CELL_CAP = 500000;
+
+		// Cells the hunk's chip diffs would fill (runs past the per-side cap
+		// fill none: they return null before the table).
+		function hunkChipCells(ops, oldLines, newLines) {
+			let cells = 0;
+			let opIndex = 0;
+			while (opIndex < ops.length) {
+				if (ops[opIndex].type === "equal") { opIndex++; continue; }
+				let oldTokens = 0;
+				let newTokens = 0;
+				while (opIndex < ops.length && ops[opIndex].type === "removed") oldTokens += tokenize(oldLines[ops[opIndex++].oldIndex]).length;
+				while (opIndex < ops.length && ops[opIndex].type === "added") newTokens += tokenize(newLines[ops[opIndex++].newIndex]).length;
+				if (oldTokens <= RUN_CHIP_CAP && newTokens <= RUN_CHIP_CAP) cells += oldTokens * newTokens;
+			}
+			return cells;
+		}
 
 		function runChipSegments(oldRunLines, newRunLines) {
 			const oldSide = oldRunLines.map((line) => tokenize(line));

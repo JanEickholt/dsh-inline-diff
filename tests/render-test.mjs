@@ -290,6 +290,23 @@ pairChecks.push(
 	["folded statement pairs at the block head", foldHtml.indexOf("did-delbg") < foldHtml.indexOf("did-void")],
 );
 
+// Word-diff budget: chips fill one token-table cell per old x new token
+// pair, so a hunk past 500k cells keeps the line tint and drops chips; a
+// hunk under it still chips. 400 words + spaces = 800 tokens per side →
+// 640k cells; 300 words → 360k.
+const wideLine = (words, changed) => Array.from({ length: words }, (_, index) => (index === changed ? "CHANGED" : "w" + index)).join(" ") + " ";
+const budgetHtml = (words) => renderToString(React.createElement(InlineDiffRow, {
+	block: { kind: "edit", resultView: { card: "diff", diffs: [{ path: "notes.txt", oldText: wideLine(words, -1) + "\n", newText: wideLine(words, 7) + "\n" }] } },
+	toolName: "edit", cwd: "/w", home: "/h",
+}));
+const overBudgetHtml = budgetHtml(400);
+const underBudgetHtml = budgetHtml(300);
+pairChecks.push(
+	["over-budget hunk drops word chips", !/did-(ins|del)word/.test(overBudgetHtml)],
+	["over-budget hunk keeps the line tint on one row", /did-insbg/.test(overBudgetHtml) && /did-delbg/.test(overBudgetHtml) && !overBudgetHtml.includes("did-void")],
+	["under-budget hunk still chips", /did-insword[^>]*>CHANGED</.test(underBudgetHtml)],
+);
+
 const checks = [
 	["hljs keyword span", /<span class="hljs-keyword"/.test(html)],
 	["hljs comment span", /hljs-comment/.test(html)],

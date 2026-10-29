@@ -162,6 +162,42 @@ const shadowedMeta = tools.createSuccessResult({}, shadowedEdit, { before: shado
 assert.equal(shadowedMeta.diffs[0].oldStart, 4, "old side anchors on a line start, not a line tail");
 assert.equal(shadowedMeta.diffs[0].newStart, 4, "new side anchors on a line start, not a line tail");
 
+// Recurring hunk text: the hunk's whole block also occurs earlier, as
+// complete lines, so a first-hit scan stamps it there. Hunks are exactly
+// the producer's (jsdiff, 3 context lines) for these pairs; only the
+// joint placement — shared gaps, agreeing tails — names the true lines.
+const placedEdit = (diffs) => ({
+	name: "edit",
+	output: { presentationMeta() { return { diffs: diffs.map((hunk) => ({ ...hunk })) }; } },
+});
+// A closing block appended to at EOF (no trailing newline before): the
+// same four "}" lines open the file. jsdiff: @@ -6,4 +6,5 @@.
+const tailBefore = ["}", "}", "}", "}", "w", "}", "}", "}", "}"].join("\n");
+const tailMeta = tools.createSuccessResult({}, placedEdit([{
+	path: "/w/tail.txt", oldText: "}\n}\n}\n}", newText: "}\n}\n}\n}\nd",
+}]), { before: tailBefore, after: tailBefore + "\nd" });
+assert.equal(tailMeta.diffs[0].oldStart, 6, "recurring block anchors where it changed (old)");
+assert.equal(tailMeta.diffs[0].newStart, 6, "recurring block anchors where it changed (new)");
+// An insertion between identical lines: the old side is six copies of a
+// line that fills the file. jsdiff: @@ -8,6 +8,7 @@.
+const sameBefore = Array.from({ length: 20 }, () => "same").join("\n") + "\n";
+const sameLines = sameBefore.split("\n");
+sameLines.splice(10, 0, "changed");
+const sameMeta = tools.createSuccessResult({}, placedEdit([{
+	path: "/w/same.txt",
+	oldText: Array(6).fill("same").join("\n"),
+	newText: ["same", "same", "same", "changed", "same", "same", "same"].join("\n"),
+}]), { before: sameBefore, after: sameLines.join("\n") });
+assert.equal(sameMeta.diffs[0].oldStart, 8, "insertion amid identical lines anchors its old side");
+assert.equal(sameMeta.diffs[0].newStart, 8, "insertion amid identical lines anchors its new side");
+// Whole-file delete: the old side ends in a newline the empty new side
+// lacks, which hunk text never carries.
+const wipedMeta = tools.createSuccessResult({}, placedEdit([{
+	path: "/w/wiped.txt", oldText: "one\ntwo", newText: "",
+}]), { before: "one\ntwo\n", after: "" });
+assert.equal(wipedMeta.diffs[0].oldStart, 1, "whole-file delete anchors the old side");
+assert.equal(wipedMeta.diffs[0].newStart, null, "whole-file delete leaves the empty side unstamped");
+
 // The wrapper keeps the projector's receiver (the kernel calls it on
 // `output`), and unloading puts back the very function it replaced rather
 // than a copy bound to the definition.

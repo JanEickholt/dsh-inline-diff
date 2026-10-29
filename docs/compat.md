@@ -72,5 +72,11 @@ instead of failing to load.
 - The fenced read route and the `presentationMeta` anchor are the plugin's
   reason to touch `tools` at all. Both contracts are stable across all three
   lines, so no adapter is needed there.
+- The fenced read route answers only what the host's own `/api` would. With
+  the `connection` service composed it defers to
+  `connection.requestRejection(req)` (Host/Origin fence plus the login
+  cookie, as `dsh-host-open-in-app` does); a host without that service gets
+  a local fence instead: loopback `Host`, no cross-site fetch metadata, a
+  same-authority `Origin`.
 - `dsh-settings` is a peer dependency with range `>=0.1.1-rc.2 <0.3.0-0`; the
   `<0.2.0-0` bound that shipped with 1.8.0 excluded the current `latest` line.

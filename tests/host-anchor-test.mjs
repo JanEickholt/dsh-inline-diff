@@ -198,16 +198,18 @@ const READ_CAP = 512 * 1024;
 const bigText = "0123456789abcdef\n".repeat(Math.ceil((READ_CAP * 2) / 17));
 writeFileSync(join(workspace, "big.txt"), bigText);
 writeFileSync(join(workspace, "small.txt"), "one\ntwo\n");
-const postRead = (path) => new Promise((resolvePost) => {
+const postRead = (path, headers = { host: "127.0.0.1:3080" }, route = routes[0]) => new Promise((resolvePost) => {
 	const req = new EventEmitter();
 	req.url = "/dsh-inline-diff/api/read";
 	req.method = "POST";
+	req.headers = headers;
 	req.destroy = () => {};
+	let status = 0;
 	const res = {
-		writeHead() {},
-		end(body) { resolvePost(JSON.parse(body)); },
+		writeHead(code) { status = code; },
+		end(body) { resolvePost({ status, ...JSON.parse(body) }); },
 	};
-	void routes[0].handler(req, res);
+	void route.handler(req, res);
 	req.emit("data", Buffer.from(JSON.stringify({ cwd: workspace, path })));
 	req.emit("end");
 });
@@ -222,6 +224,40 @@ try {
 	assert.equal(small.truncated, false, "small file is not truncated");
 	const escape = await postRead("../outside.txt");
 	assert.equal(escape.kind, "error", "paths outside the workspace are refused");
+
+	// Trust fence: the route answers file text for a client-chosen cwd, so a
+	// DNS-rebound page (foreign Host), a cross-site fetch or a foreign
+	// Origin must be refused before any read — the host's /api refuses them.
+	const rebound = await postRead("small.txt", { host: "attacker.example:3080" });
+	assert.equal(rebound.status, 403, "a non-loopback Host is refused");
+	assert.equal(rebound.content, undefined, "a refused request reads nothing");
+	const crossSite = await postRead("small.txt", { host: "127.0.0.1:3080", "sec-fetch-site": "cross-site" });
+	assert.equal(crossSite.status, 403, "a cross-site fetch is refused");
+	const foreignOrigin = await postRead("small.txt", { host: "localhost:3080", origin: "http://attacker.example" });
+	assert.equal(foreignOrigin.status, 403, "a foreign Origin is refused");
+	assert.equal((await postRead("small.txt", {})).status, 403, "a request without Host is refused");
+	const sameOrigin = await postRead("small.txt", { host: "localhost:3080", origin: "http://localhost:3080" });
+	assert.equal(sameOrigin.content, "one\ntwo\n", "a same-origin loopback request reads");
+
+	// With the host's `connection` service composed, its verdict (Host/Origin
+	// fence plus login cookie) is authoritative.
+	let verdict = 401;
+	const fencedRoutes = [];
+	apply({
+		effect(factory) { return factory(); },
+		inject(services, fn) {
+			if (services.length !== 1) return;
+			const child = { effect(factory) { return factory(); } };
+			if (services[0] === "connection") fn({ ...child, connection: { requestRejection: () => verdict } });
+			if (services[0] === "webServer") fn({ ...child, webServer: { register(route) { fencedRoutes.push(route); return () => {}; } } });
+		},
+	});
+	const unauthenticated = await postRead("small.txt", { host: "127.0.0.1:3080" }, fencedRoutes[0]);
+	assert.equal(unauthenticated.status, 401, "the connection service's rejection is served");
+	assert.equal(unauthenticated.content, undefined, "an unauthenticated request reads nothing");
+	verdict = undefined;
+	const admitted = await postRead("small.txt", { host: "127.0.0.1:3080" }, fencedRoutes[0]);
+	assert.equal(admitted.content, "one\ntwo\n", "an admitted request reads");
 } finally {
 	rmSync(workspace, { recursive: true, force: true });
 }

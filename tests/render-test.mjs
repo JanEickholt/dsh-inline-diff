@@ -527,6 +527,28 @@ try {
 	if (!crlfOk) failed++;
 	crlfRoot.unmount();
 
+	// Past the read cap the route serves only the head: the hunk sits there
+	// once (line 2), but may recur past the cut, so uniqueness is unprovable
+	// and the gutter must keep its window-relative 1..N instead of line 2.
+	globalThis.fetch = async (_url, init) => {
+		reads.push(JSON.parse(init.body).path);
+		return { ok: true, json: async () => ({ kind: "text", truncated: true, size: 1 << 20, content: "head\nalpha\nBETA\ngamma\n" }) };
+	};
+	const capContainer = freshContainer();
+	const capRoot = createRoot(capContainer);
+	flushSync(() => {
+		capRoot.render(React.createElement(InlineDiffRow, {
+			block: { ...crlfBlock, callId: "call-5", meta: { diffs: [{ path: "/w/huge.txt", oldText: "alpha\nbeta\ngamma", newText: "alpha\nBETA\ngamma" }] } },
+			toolName: "edit", cwd: "/w", home: "/h",
+		}));
+	});
+	await settle();
+	const capNums = [...capContainer.querySelectorAll(".did-col:last-child .did-num")].map((el) => el.textContent);
+	const capOk = reads.includes("/w/huge.txt") && capNums.join(",") === "1,2,3";
+	console.log((capOk ? "PASS" : "FAIL") + " a truncated read never anchors the gutter (got " + capNums.join(",") + ")");
+	if (!capOk) failed++;
+	capRoot.unmount();
+
 	// Sides with no text need no base: a created file's argument-derived
 	// hunk IS the whole file (line 1 by construction) and a whole-file
 	// delete's new side is empty, so neither card spends a file read.

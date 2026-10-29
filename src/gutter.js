@@ -27,12 +27,20 @@
 			return at === -1 ? null : at;
 		}
 
+		/** Lines compared by the locate: the read route serves the file as it
+		 *  sits on disk, CRLF included, while hunks ride the host's
+		 *  LF-normalized diff basis, so every line of a CRLF file would carry
+		 *  a "\r" no hunk line has and never match. */
+		function locateLines(text) {
+			return splitLines(text.indexOf("\r") < 0 ? text : text.replace(/\r\n/g, "\n"));
+		}
+
 		/** Per-side 1-based bases for one unstamped hunk: the post-image locates
 		 *  the new side; the old side only when both sides start on the same
 		 *  shared line. Deletion-only hunks anchor on their first old lines. */
 		function locateHunkBases(hunk, fileLines) {
-			const newLines = splitLines(hunk.newText);
-			const oldLines = splitLines(hunk.oldText);
+			const newLines = locateLines(hunk.newText);
+			const oldLines = locateLines(hunk.oldText);
 			let oldBase = null;
 			let newBase = null;
 			if (newLines.length > 0) {

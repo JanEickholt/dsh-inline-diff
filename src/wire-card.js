@@ -42,10 +42,11 @@
 			// string, and the new harness records meta.diffs: [] for created
 			// files, so this argument-derived hunk is the only diff a write
 			// card gets. An empty old side diffs as all-added, which is the
-			// intended whole-file view.
+			// intended whole-file view. The content IS the whole file, so its
+			// first line is line 1 by construction — no read needed to say so.
 			if (name === "write") {
 				return typeof args.content === "string" && typeof args.file_path === "string"
-					? { path: args.file_path, oldText: "", newText: args.content }
+					? { path: args.file_path, oldText: "", newText: args.content, newStart: 1 }
 					: null;
 			}
 			if (name !== "edit") return null;

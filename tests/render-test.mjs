@@ -499,6 +499,60 @@ try {
 	console.log((hookErrors.length === 0 ? "PASS" : "FAIL") + " no hook-count errors across the lifecycle (got " + hookErrors.length + ")");
 	if (hookErrors.length > 0) { console.log("  " + hookErrors[0]); failed++; }
 
+	// Gutter fallback over the fenced read route. The route serves the file
+	// as it sits on disk, so a CRLF file's lines end in "\r" while the hunk
+	// rides the host's LF basis; the locate must still find the hunk (line
+	// 3 here) instead of leaving window-relative 1..N numbers.
+	const reads = [];
+	globalThis.fetch = async (_url, init) => {
+		reads.push(JSON.parse(init.body).path);
+		return { ok: true, json: async () => ({ kind: "text", content: "head\r\nmore\r\nalpha\r\nBETA\r\ngamma\r\n" }) };
+	};
+	const settle = () => new Promise((resolveTick) => setTimeout(resolveTick, 20));
+	const crlfBlock = {
+		kind: "tool-result", seq: 4, time: 4, callId: "call-2", name: "edit",
+		call: { name: "edit", argsRaw: JSON.stringify({ file_path: "/w/crlf.txt", old_string: "beta", new_string: "BETA" }) },
+		content: [], isError: false,
+		meta: { diffs: [{ path: "/w/crlf.txt", oldText: "alpha\nbeta\ngamma", newText: "alpha\nBETA\ngamma" }] },
+		subCalls: [],
+	};
+	const freshContainer = () => document.body.appendChild(document.createElement("div"));
+	const crlfContainer = freshContainer();
+	const crlfRoot = createRoot(crlfContainer);
+	flushSync(() => { crlfRoot.render(React.createElement(InlineDiffRow, { block: crlfBlock, toolName: "edit", cwd: "/w", home: "/h" })); });
+	await settle();
+	const crlfNums = [...crlfContainer.querySelectorAll(".did-col:last-child .did-num")].map((el) => el.textContent);
+	const crlfOk = crlfNums.join(",") === "3,4,5";
+	console.log((crlfOk ? "PASS" : "FAIL") + " CRLF file locates its hunk (got " + crlfNums.join(",") + ")");
+	if (!crlfOk) failed++;
+	crlfRoot.unmount();
+
+	// Sides with no text need no base: a created file's argument-derived
+	// hunk IS the whole file (line 1 by construction) and a whole-file
+	// delete's new side is empty, so neither card spends a file read.
+	reads.length = 0;
+	const noReadRoot = createRoot(freshContainer());
+	flushSync(() => {
+		noReadRoot.render(React.createElement("div", null,
+			React.createElement(InlineDiffRow, {
+				key: "w", toolName: "write", cwd: "/w", home: "/h",
+				block: { kind: "tool-result", seq: 5, time: 5, callId: "call-3", name: "write", isError: false, content: [], subCalls: [],
+					meta: { operation: "create", diffs: [] },
+					call: { name: "write", argsRaw: JSON.stringify({ file_path: "/w/new.txt", content: "one\ntwo\n" }) } },
+			}),
+			React.createElement(InlineDiffRow, {
+				key: "d", toolName: "edit", cwd: "/w", home: "/h",
+				block: { kind: "tool-result", seq: 6, time: 6, callId: "call-4", name: "edit", isError: false, content: [], subCalls: [],
+					meta: { diffs: [{ path: "/w/gone.txt", oldText: "x\ny", newText: "", oldStart: 1, newStart: null }] },
+					call: { name: "edit", argsRaw: "{}" } },
+			})));
+	});
+	await settle();
+	const noReadOk = reads.length === 0;
+	console.log((noReadOk ? "PASS" : "FAIL") + " empty sides and whole-file writes skip the file read (got " + reads.length + ")");
+	if (!noReadOk) failed++;
+	noReadRoot.unmount();
+
 	console.error = origError;
 	root.unmount();
 } catch (err) {

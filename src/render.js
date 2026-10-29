@@ -330,8 +330,10 @@
 				if (hunks === null || failed || !settled || cwd === undefined) return;
 				if (baseCache.has(hunkKey)) return;
 				const wanted = [];
+				// An empty side renders no numbered row, so it needs no base.
 				hunks.forEach((hunk, index) => {
-					if (hunk.oldStart === undefined || hunk.newStart === undefined) wanted.push(index);
+					if ((hunk.oldStart === undefined && hunk.oldText !== "")
+						|| (hunk.newStart === undefined && hunk.newText !== "")) wanted.push(index);
 				});
 				if (wanted.length === 0) return;
 				let alive = true;
@@ -343,7 +345,7 @@
 						let fileLines = fileLinesByPath.get(hunk.path);
 						if (fileLines === undefined) {
 							const content = await readWorkspaceFile(hunk.path, cwd);
-							fileLines = content === null ? null : splitLines(content);
+							fileLines = content === null ? null : locateLines(content);
 							fileLinesByPath.set(hunk.path, fileLines);
 						}
 						if (fileLines === null) continue;

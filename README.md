@@ -19,11 +19,11 @@ A typical edit: changed lines paired side by side, with the exact words that cha
 
 ## Words or whole lines
 
-By default a changed line gets double highlighting: the row is tinted green/red, and on top of that the exact words that changed get a stronger highlight. Prefer it calmer? Open **Settings → Plugins → Inline diff** and pick *Lines only*. You keep the row tint but lose the word chips. The choice is saved in your DSH settings and survives restarts.
+By default a changed line gets double highlighting: the row is tinted green/red, and on top of that the exact words that changed get a stronger highlight. A very large rewrite (a hunk replacing hundreds of long lines) skips the word highlights and keeps only the row tint, so it renders without a stall. Prefer it calmer everywhere? Open **Settings → Plugins → Inline diff** and pick *Lines only*. You keep the row tint but lose the word chips. The choice is saved in your DSH settings and survives restarts.
 
 ## Line numbers
 
-Every row carries a 1-based line number in a muted gutter, on both the old and the new side. The numbers come from the harness itself: when an edit settles, the plugin anchors each served hunk to its true position, and for hunks without an anchor the card reads the file through a fenced workspace route and locates the changed block verbatim. A hunk that cannot be located (a block appearing more than once, a drifted file, no host half) falls back to window-relative numbering from the hunk's first row, so a number always renders — but it may not be the file's true line. Prefer it cleaner? Pick *Off* under **Settings → Plugins → Inline diff → Line numbers** and the gutter disappears entirely. Like the other choices, this is saved and survives restarts.
+Every row carries a 1-based line number in a muted gutter, on both the old and the new side. The numbers come from the harness itself: when an edit settles, the plugin anchors each served hunk to its true position, and for hunks without an anchor the card reads the file through a fenced workspace route and locates the changed block verbatim. A hunk that cannot be located (a block appearing more than once, a drifted file, a file past the 512 KiB read cap, no host half) falls back to window-relative numbering from the hunk's first row, so a number always renders — but it may not be the file's true line. Prefer it cleaner? Pick *Off* under **Settings → Plugins → Inline diff → Line numbers** and the gutter disappears entirely. Like the other choices, this is saved and survives restarts.
 
 ## Indentation
 
